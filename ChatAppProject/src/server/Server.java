@@ -2,7 +2,7 @@ package server;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import common.DBConnection;
+import common.models.DBConnection;
 public class Server {
   public static void main(String[] args) {
     try {
