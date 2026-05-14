@@ -1,0 +1,44 @@
+# Java build output
+bin/
+out/
+target/
+build/
+
+# IDE metadata
+.classpath
+.project
+.settings/
+.vscode/
+
+# Java archives generated locally
+*.class
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+*.properties
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Database / diagram files used locally
+*.mwb
+*.mwb.bak
+
+# Word documents and Office files
+*.doc
+*.docx
+*.docm
+*.dot
+*.dotx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# Backup files
+*~
+*.bak
