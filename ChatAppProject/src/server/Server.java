@@ -28,7 +28,7 @@ public class Server {
         //Kết nối với client
         System.out.println("Waiting for users");
         Socket clientSocket = s.accept();
-        System.out.println("Client connected: " + clientSocket.getInetAddress());
+        System.out.println("Client connected: " + clientSocket.getInetAddress().getHostAddress() + ":" +  clientSocket.getPort());
 
         Thread thread = new Thread(new ClientHandler(clientSocket));
         thread.start();
