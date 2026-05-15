@@ -30,7 +30,7 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.LOGIN_REQUEST) {
           AuthService aService = new AuthService();
           MessageObject response = aService.authenticate(request);
-          System.out.println(response.getMessage()); //test
+          System.out.println(request.getUsername()); //test
           out.writeObject(response);
           out.flush();
         }

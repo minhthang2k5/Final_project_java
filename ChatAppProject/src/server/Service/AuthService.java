@@ -20,11 +20,13 @@ public class AuthService {
             response.setSuccess(true);
             response.setMessage("Login successful");
             response.setType(MessageType.LOGIN_RESPONSE);
+            response.setSuccess(true);
         } else {
             System.out.println("Here false");
             response.setSuccess(false);
             response.setMessage("fail to login");
             response.setType(MessageType.LOGIN_RESPONSE);
+            response.setSuccess(false);
         }
         
         return response;

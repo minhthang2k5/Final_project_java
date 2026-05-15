@@ -9,10 +9,13 @@ public class Client {
   public static void main(String[] args) {
 
 
-    new MainFrame();
+    
     //Kết nối socket
     try {
       Socket s = new Socket("localhost",4321);
+      //Khởi tạo giao diên
+      new MainFrame(s);
+      
       System.out.println(s.getPort());
       
       // MessageObject msg = new MessageObject(MessageType.LOGIN_REQUEST);

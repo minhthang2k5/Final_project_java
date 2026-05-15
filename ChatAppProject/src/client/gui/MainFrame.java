@@ -1,12 +1,17 @@
 package client.gui;
 
 import javax.swing.*;
+
+import client.service.ClientAuthService;
+
 import java.awt.*;
+import java.io.IOException;
+import java.net.Socket;
 
 public class MainFrame extends JFrame {
   JPanel mainPanel;
   LoginPanel loginPanel;
-  public MainFrame() {
+  public MainFrame(Socket socket) throws IOException {
     this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     this.setLayout(new BorderLayout());
     this.setSize(900,700);
@@ -20,8 +25,12 @@ public class MainFrame extends JFrame {
 
     mainPanel = new JPanel(new CardLayout());
 
-    //Khởi tạo
-    loginPanel = new LoginPanel(mainPanel);
+    //Khởi tạo service
+    ClientAuthService clientAuthService = new ClientAuthService(socket);
+
+
+    //Khởi tạo panel
+    loginPanel = new LoginPanel(mainPanel,clientAuthService);
 
     //Thêm vào panel chính
     mainPanel.add(loginPanel,"loginPanel");

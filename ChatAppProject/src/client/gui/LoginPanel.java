@@ -1,9 +1,16 @@
 package client.gui;
 
 import javax.swing.*;
-import java.awt.*;
 
-public class LoginPanel extends JPanel {
+import client.service.ClientAuthService;
+import common.net.MessageObject;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+
+public class LoginPanel extends JPanel implements ActionListener {
   JButton signinButton;
   JButton signupButton;
   JLabel usernameLabel;
@@ -12,9 +19,13 @@ public class LoginPanel extends JPanel {
   JTextField usernameText;
   JPasswordField passwordText;
   JPanel mainPanel;
-  LoginPanel(JPanel mainPanel) {
-    
+  ClientAuthService clientAuthService;
+  LoginPanel(JPanel mainPanel,ClientAuthService clientAuthService) {
+    //Khai báo
+    this.clientAuthService = clientAuthService;
 
+
+    //Thiết kế giao diện
     this.setBounds(0,0,900,700);
     this.setLayout(new BorderLayout());
     this.setBackground(new Color(240, 240, 240));
@@ -121,6 +132,11 @@ public class LoginPanel extends JPanel {
 
     this.mainPanel = mainPanel;
 
+    
+    //Add event
+    signinButton.addActionListener(this);
+    signupButton.addActionListener(this);
+    
     //In panel 
     CardLayout cl = (CardLayout) mainPanel.getLayout();
     cl.show(mainPanel, "loginPanel");
@@ -158,5 +174,44 @@ public class LoginPanel extends JPanel {
       return;
     }
     statusLabel.setText(message);
+  }
+
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    if (e.getSource() == signinButton) {
+      String username = usernameText.getText();
+      String password = passwordText.getText();
+      //Xử lý request
+      try {
+        clientAuthService.sendAuthentication(username, password);
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+
+
+      //Xử lý response
+      try {
+        MessageObject response = clientAuthService.receiveRespondFromLogin();
+        if (response.isSuccess()) {
+          System.out.println("Successfully login");
+          setStatusMessage(response.getMessage(), true);
+        }
+        else {
+          System.out.println("Fail to login");
+          setStatusMessage(response.getMessage(), false);
+        }
+
+
+
+      } catch (ClassNotFoundException e1) {
+
+        e1.printStackTrace();
+      } catch (IOException e1) {
+
+        e1.printStackTrace();
+      }
+    }
+
+
   }
 }
