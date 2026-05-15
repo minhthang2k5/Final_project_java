@@ -211,6 +211,11 @@ public class LoginPanel extends JPanel implements ActionListener {
         e1.printStackTrace();
       }
     }
+    else if (e.getSource() == signupButton) {
+      //In panel 
+      CardLayout cl = (CardLayout) mainPanel.getLayout();
+      cl.show(mainPanel, "registerPanel");
+    }
 
 
   }

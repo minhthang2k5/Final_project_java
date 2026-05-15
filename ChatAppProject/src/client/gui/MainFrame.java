@@ -11,6 +11,7 @@ import java.net.Socket;
 public class MainFrame extends JFrame {
   JPanel mainPanel;
   LoginPanel loginPanel;
+  RegisterPanel registerPanel;
   public MainFrame(Socket socket) throws IOException {
     this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     this.setLayout(new BorderLayout());
@@ -31,10 +32,11 @@ public class MainFrame extends JFrame {
 
     //Khởi tạo panel
     loginPanel = new LoginPanel(mainPanel,clientAuthService);
-
+    registerPanel = new RegisterPanel(mainPanel, clientAuthService);
+    
     //Thêm vào panel chính
     mainPanel.add(loginPanel,"loginPanel");
-
+    mainPanel.add(registerPanel,"registerPanel");
 
 
     this.add(mainPanel, BorderLayout.CENTER);
