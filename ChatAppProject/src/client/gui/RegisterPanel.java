@@ -4,8 +4,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.concurrent.ExecutionException;
 
 import client.service.ClientAuthService;
+import common.net.MessageObject;
 
 public class RegisterPanel extends JPanel implements ActionListener {
   JButton signupButton;
@@ -217,8 +219,14 @@ public class RegisterPanel extends JPanel implements ActionListener {
 
   public void setStatusMessage(String message) {
     if (message == null || message.trim().isEmpty()) {
+      statusLabel.setForeground(new Color(220, 53, 69));
       statusLabel.setText(" ");
       return;
+    }
+    if ("successful".equalsIgnoreCase(message.trim())) {
+      statusLabel.setForeground(new Color(40, 167, 69));
+    } else {
+      statusLabel.setForeground(new Color(220, 53, 69));
     }
     statusLabel.setText(message);
   }
@@ -227,8 +235,52 @@ public class RegisterPanel extends JPanel implements ActionListener {
   public void actionPerformed(ActionEvent e) {
     // handled by controller
     if (e.getSource() == signinButton) {
+      clearInput();
       CardLayout cl = (CardLayout) mainPanel.getLayout();
       cl.show(mainPanel, "loginPanel");
+    }
+    else if (e.getSource() == signupButton) {
+      final String username = getUsernameInput();
+      final String password = getPasswordInput();
+      final String confirmPassword = getConfirmPasswordInput();
+      final String displayName = getDisplayNameInput();
+      final String email = getEmailInput();
+
+      signupButton.setEnabled(false);
+      SwingWorker<MessageObject, Void> registerWorker = new SwingWorker<MessageObject,Void>() {
+
+        @Override
+        protected MessageObject doInBackground() throws Exception {
+          clientAuthService.sendRegisterInformation(username, password, confirmPassword, displayName, email);
+          return clientAuthService.receiveRespond();
+
+        }
+        @Override
+        protected void done() {
+          try {
+            MessageObject response = get();
+            if (response != null && response.isSuccess()) {
+              System.out.println("Successfully register");
+              setStatusMessage("Successful");
+            } else if (response != null) {
+              System.out.println("Fail to sign up");
+              setStatusMessage(response.getMessage());
+            } else {
+              setStatusMessage("Register failed");
+            }
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          } catch (ExecutionException e) {
+            e.printStackTrace();
+          } finally {
+            signupButton.setEnabled(true);
+          }
+        }
+      };
+      registerWorker.execute();
+      
+      
+
     }
   }
 }

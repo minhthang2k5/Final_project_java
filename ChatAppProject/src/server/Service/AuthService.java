@@ -145,7 +145,7 @@ class CheckRegister {
             return "Email is required";
         }
 
-        if (!email.contains("@") && !email.contains(".")) {
+        if (!email.contains("@") || !email.contains(".")) {
             return "Email must contain @ or .";
         }
 

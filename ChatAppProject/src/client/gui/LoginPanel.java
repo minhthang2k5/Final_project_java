@@ -191,7 +191,7 @@ public class LoginPanel extends JPanel implements ActionListener {
 
       //Xử lý response
       try {
-        MessageObject response = clientAuthService.receiveRespondFromLogin();
+        MessageObject response = clientAuthService.receiveRespond();
         if (response.isSuccess()) {
           System.out.println("Successfully login");
           setStatusMessage(response.getMessage(), true);
@@ -213,6 +213,7 @@ public class LoginPanel extends JPanel implements ActionListener {
     }
     else if (e.getSource() == signupButton) {
       //In panel 
+      clearInput();
       CardLayout cl = (CardLayout) mainPanel.getLayout();
       cl.show(mainPanel, "registerPanel");
     }

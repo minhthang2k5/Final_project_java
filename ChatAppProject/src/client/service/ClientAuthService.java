@@ -22,9 +22,22 @@ public class ClientAuthService {
     out.writeObject(msg);
     out.flush();
   }
-  public MessageObject receiveRespondFromLogin() throws ClassNotFoundException, IOException {
+  public MessageObject receiveRespond() throws ClassNotFoundException, IOException {
     MessageObject response = (MessageObject) in.readObject();
     return response;
   }
+  public void sendRegisterInformation(String username,String password,String confirmPassword, 
+    String displayName,String email) throws IOException {
+      MessageObject msg = new MessageObject(MessageType.REGISTER_REQUEST);
+      msg.setUsername(username);
+      msg.setPassword(password);
+      msg.setConfirmPassword(confirmPassword);
+      msg.setEmail(email);
+      msg.setDisplayName(displayName);
+      out.writeObject(msg);
+      out.flush();
+      
+  }
+
 
 }
