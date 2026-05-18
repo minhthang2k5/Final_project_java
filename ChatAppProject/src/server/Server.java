@@ -1,11 +1,15 @@
 package server;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
 import java.net.*;
 import common.models.DBConnection;
 import server.handlers.ClientHandler;
 public class Server {
+
+  public static ConcurrentHashMap<String, Socket> onlineUsers =
+            new ConcurrentHashMap<>();
   public static void main(String[] args) {
     //Kết nối database
     try {

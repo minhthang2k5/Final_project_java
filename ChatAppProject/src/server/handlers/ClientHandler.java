@@ -4,6 +4,7 @@ import java.net.*;
 
 import common.net.MessageObject;
 import common.net.MessageType;
+import server.Server;
 import server.Service.AuthService;
 
 import java.io.*;
@@ -12,6 +13,7 @@ public class ClientHandler implements Runnable {
   private Socket socket;
   private ObjectInputStream in;
   private ObjectOutputStream out;
+  private String username;
 
   public ClientHandler(Socket socket) {
     this.socket = socket;
@@ -30,9 +32,15 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.LOGIN_REQUEST) {
           AuthService aService = new AuthService();
           MessageObject response = aService.authenticate(request);
-          System.out.println(request.getUsername()); //test
+          //System.out.println(request.getUsername()); //test
           out.writeObject(response);
           out.flush();
+          if (response.isSuccess()) {
+            this.username = request.getUsername();
+            //Add user
+            Server.onlineUsers.put(username,socket);
+            System.out.println(username + " online");
+          }
         }
         if (request.getType() == MessageType.REGISTER_REQUEST) {
           AuthService aService = new AuthService();
@@ -59,6 +67,10 @@ public class ClientHandler implements Runnable {
       try {
         if (socket != null && !socket.isClosed()) socket.close();
       } catch (IOException e) {}
+      if (username != null) {
+                Server.onlineUsers.remove(username);
+                System.out.println(username + " offline");
+      }
     }
   }
   

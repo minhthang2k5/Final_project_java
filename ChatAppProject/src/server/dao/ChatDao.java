@@ -40,6 +40,7 @@ public class ChatDao {
     }
     return false;
   }
+  
   public boolean createConversationSingle(String senderUsername,String receiverUsername) {
     String insertConversationSql = "INSERT INTO conversations (name, type) VALUES (NULL, 'Single')";
     String insertParticipantSql = "INSERT INTO participants (user_id, conversation_id) VALUES (?, ?)";
