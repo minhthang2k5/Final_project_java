@@ -34,6 +34,13 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           out.flush();
         }
+        if (request.getType() == MessageType.REGISTER_REQUEST) {
+          AuthService aService = new AuthService();
+          MessageObject response = aService.checkConditionForRegisterAndAdd(request);
+          System.out.println("Register from port: " + socket.getPort()); //test
+          out.writeObject(response);
+          out.flush();
+        }
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

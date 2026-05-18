@@ -17,7 +17,7 @@ CREATE TABLE `users` (
   `username` VARCHAR(255) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) DEFAULT NULL,
-  `display_name` VARCHAR(255) NOT NULL UNIQUE,
+  `display_name` VARCHAR(255) NOT NULL ,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB;

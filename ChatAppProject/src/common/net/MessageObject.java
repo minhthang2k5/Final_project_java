@@ -8,6 +8,9 @@ public class MessageObject implements Serializable {
   private MessageType type;      //Loại thông điệp (Lấy từ Enum ở trên)
   private String username;
   private String password;
+  private String confirmPassword;
+  private String email;
+  private String displayName;
   private boolean success;
   private String message;
   
@@ -38,6 +41,27 @@ public class MessageObject implements Serializable {
   }
   public void setPassword(String password) { 
     this.password = password; 
+  }
+
+  public String getConfirmPassword() {
+    return confirmPassword;
+  }
+  public void setConfirmPassword(String confirmPassword) {
+    this.confirmPassword = confirmPassword;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
   }
 
   public boolean isSuccess() { 
