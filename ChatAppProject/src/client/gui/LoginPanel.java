@@ -8,7 +8,7 @@ import common.net.MessageObject;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 public class LoginPanel extends JPanel implements ActionListener {
   JButton signinButton;
@@ -179,37 +179,43 @@ public class LoginPanel extends JPanel implements ActionListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     if (e.getSource() == signinButton) {
-      String username = usernameText.getText();
-      String password = passwordText.getText();
-      //Xử lý request
-      try {
-        clientAuthService.sendAuthentication(username, password);
-      } catch (IOException e1) {
-        e1.printStackTrace();
-      }
+      final String username = getUsernameInput();
+      final String password = getPasswordInput();
 
-
-      //Xử lý response
-      try {
-        MessageObject response = clientAuthService.receiveRespond();
-        if (response.isSuccess()) {
-          System.out.println("Successfully login");
-          setStatusMessage(response.getMessage(), true);
-        }
-        else {
-          System.out.println("Fail to login");
-          setStatusMessage(response.getMessage(), false);
+      signinButton.setEnabled(false);
+      SwingWorker<MessageObject, Void> loginWorker = new SwingWorker<MessageObject, Void>() {
+        @Override
+        protected MessageObject doInBackground() throws Exception {
+          clientAuthService.sendAuthentication(username, password);
+          return clientAuthService.receiveRespond();
         }
 
-
-
-      } catch (ClassNotFoundException e1) {
-
-        e1.printStackTrace();
-      } catch (IOException e1) {
-
-        e1.printStackTrace();
-      }
+        @Override
+        protected void done() {
+          try {
+            MessageObject response = get();
+            if (response != null && response.isSuccess()) {
+              System.out.println("Successfully login");
+              setStatusMessage(response.getMessage(), false);
+            } else if (response != null) {
+              System.out.println("Fail to login");
+              setStatusMessage(response.getMessage(), true);
+            } else {
+              setStatusMessage("Login failed", true);
+            }
+          } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+            e1.printStackTrace();
+            setStatusMessage("Login failed", true);
+          } catch (ExecutionException e1) {
+            e1.printStackTrace();
+            setStatusMessage("Login failed", true);
+          } finally {
+            signinButton.setEnabled(true);
+          }
+        }
+      };
+      loginWorker.execute();
     }
     else if (e.getSource() == signupButton) {
       //In panel 
