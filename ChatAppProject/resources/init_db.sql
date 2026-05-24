@@ -61,11 +61,26 @@ INSERT INTO `users` (`username`, `password`, `email`, `display_name`) VALUES
 ('minhthang', '123456', 'minhthang@example.com', 'Minh Thang'),
 ('thuytram', '123456', 'thuytram@example.com', 'Thuy Tram'),
 ('anhkhoa', '123456', 'anhkhoa@example.com', 'Anh Khoa'),
-('ngocanh', '123456', 'ngocanh@example.com', 'Ngoc Anh');
+('ngocanh', '123456', 'ngocanh@example.com', 'Ngoc Anh'),
+('quanghuy', '123456', 'quanghuy@example.com', 'Quang Huy'),
+('linhchi', '123456', 'linhchi@example.com', 'Linh Chi'),
+('thanhdat', '123456', 'thanhdat@example.com', 'Thanh Dat'),
+('hoangyen', '123456', 'hoangyen@example.com', 'Hoang Yen'),
+('minhtri', '123456', 'minhtri@example.com', 'Minh Tri');
 
 INSERT INTO `conversations` (`name`, `type`) VALUES
 ('Private chat: Minh Thang - Thuy Tram', 'Single'),
-('Java class group', 'Group');
+('Java class group', 'Group'),
+('Private chat: Anh Khoa - Ngoc Anh', 'Single'),
+('Private chat: Quang Huy - Linh Chi', 'Single'),
+('Private chat: Thanh Dat - Hoang Yen', 'Single'),
+('Private chat: Minh Tri - Minh Thang', 'Single'),
+('Database group', 'Group'),
+('Project planning', 'Group'),
+('UI design group', 'Group'),
+('DevOps discussion', 'Group'),
+('Team announcements', 'Group'),
+('QA testing', 'Group');
 
 INSERT INTO `participants` (`user_id`, `conversation_id`) VALUES
 (1, 1),
@@ -73,7 +88,17 @@ INSERT INTO `participants` (`user_id`, `conversation_id`) VALUES
 (1, 2),
 (2, 2),
 (3, 2),
-(4, 2);
+(4, 2),
+(3, 3),
+(4, 3),
+(5, 4),
+(6, 4),
+(7, 5),
+(8, 5),
+(9, 6),
+(1, 6),
+(2, 7),
+(3, 7);
 
 INSERT INTO `messages` (`conversation_id`, `sender_id`, `type`, `content_text`, `file_path`, `duration`) VALUES
 (1, 1, 'text', 'Hi Tram, how was your study today?', NULL, NULL),
@@ -85,5 +110,15 @@ INSERT INTO `messages` (`conversation_id`, `sender_id`, `type`, `content_text`, 
 (2, 2, 'text', 'Remember to add the JAR file into lib.', NULL, NULL),
 (2, 3, 'text', 'Right, missing the driver will cause an error immediately.', NULL, NULL),
 (2, 4, 'text', 'Tomorrow I will test the message sending feature.', NULL, NULL),
-(1, 2, 'text', 'Okay, I will send you a screenshot later.', NULL, NULL);
+(1, 2, 'text', 'Okay, I will send you a screenshot later.', NULL, NULL),
+(3, 3, 'text', 'We should sync about the report.', NULL, NULL),
+(3, 4, 'text', 'Sure, I can share my notes.', NULL, NULL),
+(4, 5, 'text', 'Do you want to split the tasks?', NULL, NULL),
+(4, 6, 'text', 'Yes, I will take the backend.', NULL, NULL),
+(5, 7, 'text', 'Are you free for a quick call?', NULL, NULL),
+(5, 8, 'text', 'Give me 10 minutes.', NULL, NULL),
+(6, 9, 'text', 'Any updates for the database group?', NULL, NULL),
+(6, 1, 'text', 'I will post the schema today.', NULL, NULL),
+(7, 2, 'text', 'We should finalize the plan.', NULL, NULL),
+(7, 3, 'text', 'Agree, let us meet at 3 PM.', NULL, NULL);
 

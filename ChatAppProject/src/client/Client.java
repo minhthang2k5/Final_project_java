@@ -2,10 +2,9 @@ package client;
 import java.io.*;
 import java.net.*;
 
-import client.gui.DashBoardPanel;
+import javax.swing.JFrame;
+
 import client.gui.MainFrame;
-import common.net.MessageObject;
-import common.net.MessageType;
 public class Client {
   public static void main(String[] args) throws ClassNotFoundException {
 
@@ -14,9 +13,17 @@ public class Client {
     //Kết nối socket
     try {
       Socket s = new Socket("localhost",4321);
+      ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
+      ObjectInputStream in = new ObjectInputStream(s.getInputStream());
       //Khởi tạo giao diên
-      new MainFrame(s);
+      MainFrame mainFrame = new MainFrame(in, out);
 
+      //Khởi tạo handler
+        ServerHandler serverHandler = new ServerHandler(in, out, mainFrame,
+          mainFrame.getClientAuthService());
+      mainFrame.getLoginPanel().setServerHandler(serverHandler);
+      mainFrame.getRegisterPanel().setServerHandler(serverHandler);
+      serverHandler.execute();
       
       //System.out.println("Client local port: " + s.getLocalPort());
       //System.out.println("Connected to: " + s.getInetAddress() + ":" + s.getPort());

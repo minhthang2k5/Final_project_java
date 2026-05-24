@@ -1,6 +1,9 @@
 package common.models;
 
-public class SingleConversationInfo {
+import java.io.Serializable;
+
+public class SingleConversationInfo implements Serializable {
+  private static final long serialVersionUID = 1L;
   private final int conversationId;
   private final String displayName;
   private final int userId;

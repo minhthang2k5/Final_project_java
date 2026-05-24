@@ -2,6 +2,7 @@ package client.gui;
 
 import javax.swing.*;
 
+import client.ServerHandler;
 import client.service.ClientAuthService;
 import common.net.MessageObject;
 
@@ -20,6 +21,7 @@ public class LoginPanel extends JPanel implements ActionListener {
   JPasswordField passwordText;
   JPanel mainPanel;
   ClientAuthService clientAuthService;
+  ServerHandler serverHandler;
   LoginPanel(JPanel mainPanel,ClientAuthService clientAuthService) {
     //Khai báo
     this.clientAuthService = clientAuthService;
@@ -176,6 +178,10 @@ public class LoginPanel extends JPanel implements ActionListener {
     statusLabel.setText(message);
   }
 
+  public void setServerHandler(ServerHandler serverHandler) {
+    this.serverHandler = serverHandler;
+  }
+
   @Override
   public void actionPerformed(ActionEvent e) {
     if (e.getSource() == signinButton) {
@@ -183,40 +189,18 @@ public class LoginPanel extends JPanel implements ActionListener {
       final String password = getPasswordInput();
 
       signinButton.setEnabled(false);
-      SwingWorker<MessageObject, Void> loginWorker = new SwingWorker<MessageObject, Void>() {
-        @Override
-        protected MessageObject doInBackground() throws Exception {
-          clientAuthService.sendAuthentication(username, password);
-          return clientAuthService.receiveRespond();
-        }
-
-        @Override
-        protected void done() {
-          try {
-            MessageObject response = get();
-            if (response != null && response.isSuccess()) {
-              clearInput();
-              CardLayout cl = (CardLayout) mainPanel.getLayout();
-              cl.show(mainPanel, "dashBoardPanel");
-            } else if (response != null) {
-              System.out.println("Fail to login");
-              setStatusMessage(response.getMessage(), true);
-            } else {
-              setStatusMessage("Login failed", true);
-            }
-          } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-            e1.printStackTrace();
-            setStatusMessage("Login failed", true);
-          } catch (ExecutionException e1) {
-            e1.printStackTrace();
-            setStatusMessage("Login failed", true);
-          } finally {
-            signinButton.setEnabled(true);
-          }
-        }
-      };
-      loginWorker.execute();
+      if (serverHandler == null) {
+        setStatusMessage("Login handler not ready", true);
+        signinButton.setEnabled(true);
+        return;
+      }
+      try {
+        serverHandler.requestLogin(username, password, this);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        setStatusMessage("Login failed", true);
+        signinButton.setEnabled(true);
+      }
     }
     else if (e.getSource() == signupButton) {
       //In panel 

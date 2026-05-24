@@ -31,6 +31,7 @@ public class ClientHandler implements Runnable {
   public void run() {
     try {
       out = new ObjectOutputStream(socket.getOutputStream());
+      out.flush();  // Quan trọng: gửi stream header
       in = new ObjectInputStream(socket.getInputStream());
 
       while (true) {
@@ -41,7 +42,6 @@ public class ClientHandler implements Runnable {
           MessageObject response = aService.authenticate(request);
           //System.out.println(request.getUsername()); //test
           out.writeObject(response);
-          out.flush();
           if (response.isSuccess()) {
             this.username = request.getUsername();
             //Add user
@@ -66,12 +66,14 @@ public class ClientHandler implements Runnable {
           ChatRoutingService chatRoutingService = new ChatRoutingService();
           chatRoutingService.handleReceiveAndSendSingleChatMessage(request);
         }
-        if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
+        if (request.getType() == MessageType.GET_LIST_SINGLE_USER_REQUEST) {
           SingleConversationService singleConversationService = new SingleConversationService();
+          System.out.println(request.getUserId());
           MessageObject response = singleConversationService.sendSingleConversationInfo(request.getUserId());
           out.writeObject(response);
           out.flush();
         }
+        
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

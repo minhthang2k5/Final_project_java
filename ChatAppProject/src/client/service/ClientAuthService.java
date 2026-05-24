@@ -3,7 +3,6 @@ package client.service;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
 
 import common.net.MessageObject;
 import common.net.MessageType;
@@ -11,9 +10,9 @@ import common.net.MessageType;
 public class ClientAuthService {
   private final ObjectOutputStream out;
   private final ObjectInputStream in;
-  public ClientAuthService(Socket socket) throws IOException {
-    this.out = new ObjectOutputStream(socket.getOutputStream());
-    this.in = new ObjectInputStream(socket.getInputStream());
+  public ClientAuthService(ObjectInputStream in, ObjectOutputStream out) throws IOException {
+    this.out = out;
+    this.in = in;
   }
   public void sendAuthentication(String username,String password) throws IOException {
     MessageObject msg = new MessageObject(MessageType.LOGIN_REQUEST);

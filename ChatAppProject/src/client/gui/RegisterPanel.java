@@ -4,10 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.concurrent.ExecutionException;
 
+import client.ServerHandler;
 import client.service.ClientAuthService;
-import common.net.MessageObject;
 
 public class RegisterPanel extends JPanel implements ActionListener {
   JButton signupButton;
@@ -25,6 +24,7 @@ public class RegisterPanel extends JPanel implements ActionListener {
   JPasswordField confirmPasswordText;
   JPanel mainPanel;
   ClientAuthService clientAuthService;
+  ServerHandler serverHandler;
 
   RegisterPanel(JPanel mainPanel, ClientAuthService clientAuthService) {
     this.mainPanel = mainPanel;
@@ -231,6 +231,10 @@ public class RegisterPanel extends JPanel implements ActionListener {
     statusLabel.setText(message);
   }
 
+  public void setServerHandler(ServerHandler serverHandler) {
+    this.serverHandler = serverHandler;
+  }
+
   @Override
   public void actionPerformed(ActionEvent e) {
     // handled by controller
@@ -247,38 +251,18 @@ public class RegisterPanel extends JPanel implements ActionListener {
       final String email = getEmailInput();
 
       signupButton.setEnabled(false);
-      SwingWorker<MessageObject, Void> registerWorker = new SwingWorker<MessageObject,Void>() {
-
-        @Override
-        protected MessageObject doInBackground() throws Exception {
-          clientAuthService.sendRegisterInformation(username, password, confirmPassword, displayName, email);
-          return clientAuthService.receiveRespond();
-
-        }
-        @Override
-        protected void done() {
-          try {
-            MessageObject response = get();
-            if (response != null && response.isSuccess()) {
-              System.out.println("Successfully register");
-              setStatusMessage("Successful");
-            } else if (response != null) {
-              System.out.println("Fail to sign up");
-              setStatusMessage(response.getMessage());
-            } else {
-              setStatusMessage("Register failed");
-            }
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          } catch (ExecutionException e) {
-            e.printStackTrace();
-          } finally {
-            signupButton.setEnabled(true);
-          }
-        }
-      };
-      registerWorker.execute();
-      
+      if (serverHandler == null) {
+        setStatusMessage("Register handler not ready");
+        signupButton.setEnabled(true);
+        return;
+      }
+      try {
+        serverHandler.requestRegister(username, password, confirmPassword, displayName, email, this);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        setStatusMessage("Register failed");
+        signupButton.setEnabled(true);
+      }
       
 
     }

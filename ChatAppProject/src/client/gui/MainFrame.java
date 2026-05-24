@@ -2,18 +2,22 @@ package client.gui;
 
 import javax.swing.*;
 
+import client.model.CurrentUser;
 import client.service.ClientAuthService;
 
 import java.awt.*;
 import java.io.IOException;
-import java.net.Socket;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 public class MainFrame extends JFrame {
   JPanel mainPanel;
   LoginPanel loginPanel;
   RegisterPanel registerPanel;
   DashBoardPanel dashBoardPanel;
-  public MainFrame(Socket socket) throws IOException {
+  ClientAuthService clientAuthService;
+  CurrentUser currentUser;
+  public MainFrame(ObjectInputStream in, ObjectOutputStream out) throws IOException {
     this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     this.setLayout(new BorderLayout());
     this.setSize(900,700);
@@ -28,7 +32,10 @@ public class MainFrame extends JFrame {
     mainPanel = new JPanel(new CardLayout());
 
     //Khởi tạo service
-    ClientAuthService clientAuthService = new ClientAuthService(socket);
+    clientAuthService = new ClientAuthService(in, out);
+    
+    //Khởi tạo model
+    currentUser = new CurrentUser();
 
 
     //Khởi tạo panel
@@ -43,5 +50,30 @@ public class MainFrame extends JFrame {
 
     this.add(mainPanel, BorderLayout.CENTER);
     this.setVisible(true);
+  }
+
+  public DashBoardPanel getDashBoardPanel() {
+    return dashBoardPanel;
+  }
+
+  public LoginPanel getLoginPanel() {
+    return loginPanel;
+  }
+
+  public RegisterPanel getRegisterPanel() {
+    return registerPanel;
+  }
+
+  public ClientAuthService getClientAuthService() {
+    return clientAuthService;
+  }
+
+  public CurrentUser getCurrentUser() {
+    return currentUser;
+  }
+
+  public void showDashBoardPanel() {
+    CardLayout cl = (CardLayout) mainPanel.getLayout();
+    cl.show(mainPanel, "dashBoardPanel");
   }
 }

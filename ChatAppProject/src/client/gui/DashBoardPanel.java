@@ -3,7 +3,6 @@ package client.gui;
 import javax.swing.*;
 
 import client.gui.components.UserListCellRenderer;
-
 import java.awt.*;
 
 public class DashBoardPanel extends JPanel {
@@ -69,9 +68,6 @@ public class DashBoardPanel extends JPanel {
 		groupList.setFixedCellHeight(56);
 		singleList.setCellRenderer(new UserListCellRenderer());
 		groupList.setCellRenderer(new UserListCellRenderer());
-		singleModel.addElement("Minh Thang ");
-		singleModel.addElement("Thuy Tram");
-		singleModel.addElement("Anh Khoa");
 		groupModel.addElement("Java class group");
 		groupModel.addElement("Database study");
 
@@ -245,4 +241,10 @@ public class DashBoardPanel extends JPanel {
 		Image image = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
 		return new ImageIcon(image);
 	}
+
+
+	public DefaultListModel<String> getSingleListModel() {
+    return (DefaultListModel<String>) singleList.getModel();
+	}
+
 }
