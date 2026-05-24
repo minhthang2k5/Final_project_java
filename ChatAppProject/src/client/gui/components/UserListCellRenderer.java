@@ -3,7 +3,9 @@ package client.gui.components;
 import javax.swing.*;
 import java.awt.*;
 
-public class UserListCellRenderer extends JPanel implements ListCellRenderer<String> {
+import common.models.SingleConversationInfo;
+
+public class UserListCellRenderer extends JPanel implements ListCellRenderer<Object> {
 
     private final JLabel avatarLabel;
     private final JLabel nameLabel;
@@ -25,9 +27,10 @@ public class UserListCellRenderer extends JPanel implements ListCellRenderer<Str
     }
 
     @Override
-    public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-        nameLabel.setText(formatDisplayText(value, index));
-        statusLabel.setIcon(new StatusIcon(Color.GREEN));
+    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        RenderData data = buildRenderData(value, index);
+        nameLabel.setText(data.displayText);
+        statusLabel.setIcon(data.statusColor == null ? null : new StatusIcon(data.statusColor));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 6));
 
         if (isSelected) {
@@ -107,6 +110,29 @@ public class UserListCellRenderer extends JPanel implements ListCellRenderer<Str
         @Override
         public int getIconHeight() {
             return size;
+        }
+    }
+
+    private static RenderData buildRenderData(Object value, int index) {
+        if (value instanceof SingleConversationInfo info) {
+            String name = info.getDisplayName() == null ? "" : info.getDisplayName();
+            String text = formatDisplayText(name + " #" + info.getUserId(), index);
+            Color statusColor = info.isOnline() ? new Color(46, 200, 113) : new Color(190, 190, 190);
+            return new RenderData(text, statusColor);
+        }
+        if (value == null) {
+            return new RenderData("", null);
+        }
+        return new RenderData(formatDisplayText(value.toString(), index), null);
+    }
+
+    private static class RenderData {
+        private final String displayText;
+        private final Color statusColor;
+
+        private RenderData(String displayText, Color statusColor) {
+            this.displayText = displayText;
+            this.statusColor = statusColor;
         }
     }
 }

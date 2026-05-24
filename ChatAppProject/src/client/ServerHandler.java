@@ -67,6 +67,8 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         if (respond.isSuccess()) {
           pendingLoginPanel.clearInput();
           mainFrame.showDashBoardPanel();
+          mainFrame.getDashBoardPanel().setUserNameText(respond.getUsername());
+          mainFrame.getDashBoardPanel().setUserIdText("#" + String.valueOf(respond.getUserId()));
           mainFrame.getCurrentUser().setUserId(respond.getUserId());
           mainFrame.getCurrentUser().setUsername(respond.getUsername());
           try {
@@ -103,10 +105,10 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
       if (respond.getType() == MessageType.GET_LIST_SINGLE_USER_RESPOND) {
         ArrayList<SingleConversationInfo> list = respond.getListSingleUser();
         DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
-        DefaultListModel<String> model = dashBoardPanel.getSingleListModel();
+        DefaultListModel<SingleConversationInfo> model = dashBoardPanel.getSingleListModel();
         model.clear();
         for (SingleConversationInfo info : list) {
-            model.addElement(info.getDisplayName() + " " + info.getUserId());
+            model.addElement(info);
         }
       }
     }

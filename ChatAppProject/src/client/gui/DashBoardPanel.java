@@ -3,10 +3,11 @@ package client.gui;
 import javax.swing.*;
 
 import client.gui.components.UserListCellRenderer;
+import common.models.SingleConversationInfo;
 import java.awt.*;
 
 public class DashBoardPanel extends JPanel {
-	private final JList<String> singleList;
+	private final JList<SingleConversationInfo> singleList;
 	private final JList<String> groupList;
 	private final JLabel userNameLabel;
 	private final JLabel userIdLabel;
@@ -58,7 +59,7 @@ public class DashBoardPanel extends JPanel {
 		leftHeader.add(signOutButton, BorderLayout.EAST);
 		leftPanel.add(leftHeader, BorderLayout.NORTH);
 
-		DefaultListModel<String> singleModel = new DefaultListModel<>();
+		DefaultListModel<SingleConversationInfo> singleModel = new DefaultListModel<>();
 		DefaultListModel<String> groupModel = new DefaultListModel<>();
 		singleList = new JList<>(singleModel);
 		groupList = new JList<>(groupModel);
@@ -78,6 +79,7 @@ public class DashBoardPanel extends JPanel {
 
 		addPeopleButton = createTabActionButton("add people");
 		addGroupButton = createTabActionButton("add group");
+		addPeopleButton.addActionListener(e -> showAddPeopleDialog());
 		JPanel singleTab = buildTabPanel(singleScroll, addPeopleButton);
 		JPanel groupTab = buildTabPanel(groupScroll, addGroupButton);
 
@@ -156,7 +158,7 @@ public class DashBoardPanel extends JPanel {
 		this.add(rightPanel, BorderLayout.CENTER);
 	}
 
-	public JList<String> getSingleList() {
+	public JList<SingleConversationInfo> getSingleList() {
 		return singleList;
 	}
 
@@ -170,6 +172,14 @@ public class DashBoardPanel extends JPanel {
 
 	public JLabel getUserIdLabel() {
 		return userIdLabel;
+	}
+
+	public void setUserNameText(String userName) {
+		userNameLabel.setText(userName == null ? "" : userName);
+	}
+
+	public void setUserIdText(String userId) {
+		userIdLabel.setText(userId == null ? "" : userId);
 	}
 
 	public JButton getSignOutButton() {
@@ -202,6 +212,30 @@ public class DashBoardPanel extends JPanel {
 
 	public JButton getSendButton() {
 		return sendButton;
+	}
+
+	private void showAddPeopleDialog() {
+		JDialog dialog = new JDialog((Frame) null, "Add People", true);
+		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		dialog.setLayout(new BorderLayout(12, 12));
+		dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+		JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
+		JLabel label = new JLabel("User ID");
+		JTextField userIdField = new JTextField();
+		inputPanel.add(label, BorderLayout.NORTH);
+		inputPanel.add(userIdField, BorderLayout.CENTER);
+
+		JButton addButton = new JButton("Add");
+		addButton.addActionListener(e -> dialog.dispose());
+		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+		actionPanel.add(addButton);
+
+		dialog.add(inputPanel, BorderLayout.CENTER);
+		dialog.add(actionPanel, BorderLayout.SOUTH);
+		dialog.setSize(320, 150);
+		dialog.setLocationRelativeTo(this);
+		dialog.setVisible(true);
 	}
 
 	private static JPanel buildTabPanel(JScrollPane listScroll, JButton actionButton) {
@@ -243,8 +277,8 @@ public class DashBoardPanel extends JPanel {
 	}
 
 
-	public DefaultListModel<String> getSingleListModel() {
-    return (DefaultListModel<String>) singleList.getModel();
+	public DefaultListModel<SingleConversationInfo> getSingleListModel() {
+    return (DefaultListModel<SingleConversationInfo>) singleList.getModel();
 	}
 
 }

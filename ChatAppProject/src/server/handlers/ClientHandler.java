@@ -16,7 +16,8 @@ public class ClientHandler implements Runnable {
   private ObjectInputStream in;
   private ObjectOutputStream out;
   private String username;
-
+  private int userId;
+  private  SingleConversationService singleConversationService = new SingleConversationService();
   public ClientHandler(Socket socket) {
     this.socket = socket;
   }
@@ -25,6 +26,12 @@ public class ClientHandler implements Runnable {
   } 
   public ObjectInputStream getInputStream() {
     return in;
+  }
+
+  public void sendStatusOnline() throws IOException {
+    MessageObject response = singleConversationService.sendSingleConversationInfo(userId);
+    out.writeObject(response);
+    out.flush();
   }
 
   @Override
@@ -44,9 +51,11 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           if (response.isSuccess()) {
             this.username = request.getUsername();
+            this.userId = response.getUserId();
             //Add user
             Server.onlineUsers.put(username,this);
             System.out.println(username + " online");
+            singleConversationService.sendStatusOnline(userId);
           }
         }
         if (request.getType() == MessageType.REGISTER_REQUEST) {
@@ -83,6 +92,12 @@ public class ClientHandler implements Runnable {
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     } finally {
+
+      if (username != null) {
+            Server.onlineUsers.remove(username);
+            System.out.println(username + " offline");
+            singleConversationService.sendStatusOnline(userId);
+      }
       try {
         if (in != null) in.close();
       } catch (IOException e) {}
@@ -92,10 +107,7 @@ public class ClientHandler implements Runnable {
       try {
         if (socket != null && !socket.isClosed()) socket.close();
       } catch (IOException e) {}
-      if (username != null) {
-                Server.onlineUsers.remove(username);
-                System.out.println(username + " offline");
-      }
+      
     }
   }
   
