@@ -18,13 +18,12 @@ public class AuthService {
         if (resCheck == true) {
             response.setSuccess(true);
             response.setMessage("Login successful");
+            response.setUserId(userDao.fetchUserID(username));
             response.setType(MessageType.LOGIN_RESPONSE);
-            response.setSuccess(true);
         } else {
             response.setSuccess(false);
             response.setMessage("Username or Password is not correct");
             response.setType(MessageType.LOGIN_RESPONSE);
-            response.setSuccess(false);
         }
         
         return response;

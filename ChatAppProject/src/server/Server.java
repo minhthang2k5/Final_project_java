@@ -8,8 +8,8 @@ import common.models.DBConnection;
 import server.handlers.ClientHandler;
 public class Server {
 
-  public static ConcurrentHashMap<String, Socket> onlineUsers =
-            new ConcurrentHashMap<>();
+  public static ConcurrentHashMap<String, ClientHandler> onlineUsers =
+            new ConcurrentHashMap<>(); //
   public static void main(String[] args) {
     //Kết nối database
     try {

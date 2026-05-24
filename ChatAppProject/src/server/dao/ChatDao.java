@@ -4,8 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import common.models.DBConnection;
+import common.models.SingleConversationInfo;
 
 public class ChatDao {
   public boolean checkExitsSingleConversationBetweenTwoUsers(String senderUsername, String receiverUsername) {
@@ -41,7 +44,7 @@ public class ChatDao {
     return false;
   }
   
-  public boolean createConversationSingle(String senderUsername,String receiverUsername) {
+  public boolean createConversationSingle(int senderId, int receiverId, StringBuilder messageRes) {
     String insertConversationSql = "INSERT INTO conversations (name, type) VALUES (NULL, 'Single')";
     String insertParticipantSql = "INSERT INTO participants (user_id, conversation_id) VALUES (?, ?)";
 
@@ -64,9 +67,7 @@ public class ChatDao {
           return false;
         }
 
-        Integer senderId = fetchUserId(con, senderUsername);
-        Integer receiverId = fetchUserId(con, receiverUsername);
-        if (senderId == null || receiverId == null) {
+        if (senderId <= 0 || receiverId <= 0) {
           con.rollback();
           return false;
         }
@@ -84,6 +85,8 @@ public class ChatDao {
         con.commit();
         return true;
       } catch (SQLException e) {
+        messageRes.setLength(0);
+        messageRes.append("user id does not exist");
         con.rollback();
         throw e;
       } finally {
@@ -95,32 +98,16 @@ public class ChatDao {
     }
   }
 
-  private Integer fetchUserId(Connection con, String username) throws SQLException {
-    String sql = "SELECT user_id FROM users WHERE username = ?";
-    try (PreparedStatement pStatement = con.prepareStatement(sql)) {
-      pStatement.setString(1, username);
-      try (ResultSet rs = pStatement.executeQuery()) {
-        if (rs.next()) {
-          return rs.getInt(1);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  public boolean writeMessage(String senderUsername,int conversationID,String messagesChat) {
+  public boolean writeMessage(int senderId, int conversationID, String messagesChat) {
     String sql = """
       INSERT INTO messages (conversation_id, sender_id, type, content_text)
-      SELECT ?, user_id, 'text', ?
-      FROM users
-      WHERE username = ?
+      VALUES (?, ?, 'text', ?)
       """;
     try (Connection con = DBConnection.getConnection();
         PreparedStatement pStatement = con.prepareStatement(sql)) {
       pStatement.setInt(1, conversationID);
-      pStatement.setString(2, messagesChat);
-      pStatement.setString(3, senderUsername);
+      pStatement.setInt(2, senderId);
+      pStatement.setString(3, messagesChat);
       int rows = pStatement.executeUpdate();
       return rows > 0;
     } catch (SQLException e) {
@@ -129,4 +116,65 @@ public class ChatDao {
 
     return false;
   }
+
+  public String[] getUsernameInConversation(int conversationID) {
+    String sql = """
+      SELECT u.username
+      FROM participants p
+      JOIN users u ON p.user_id = u.user_id
+      WHERE p.conversation_id = ?
+      """;
+    List<String> usernames = new ArrayList<>();
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, conversationID);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        while (rs.next()) {
+          usernames.add(rs.getString("username"));
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return usernames.toArray(new String[0]);
+  }
+
+  //Conservation_id, display name, user_id
+  public ArrayList<SingleConversationInfo> getListSingleConversationById(int userId) {
+    ArrayList<SingleConversationInfo> result = new ArrayList<>();
+    if (userId <= 0) {
+      return result;
+    }
+
+    String sql = """
+      SELECT c.conversation_id, u.display_name, u.user_id
+      FROM conversations c
+      JOIN participants p_self ON p_self.conversation_id = c.conversation_id
+      JOIN participants p_other ON p_other.conversation_id = c.conversation_id
+      JOIN users u ON u.user_id = p_other.user_id
+      WHERE c.type = 'Single'
+        AND p_self.user_id = ?
+        AND p_other.user_id <> p_self.user_id
+      ORDER BY c.conversation_id
+      """;
+
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, userId);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        while (rs.next()) {
+          int conversationId = rs.getInt("conversation_id");
+          String displayName = rs.getString("display_name");
+          int otherUserId = rs.getInt("user_id");
+          result.add(new SingleConversationInfo(conversationId, displayName, otherUserId));
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return result;
+  }
+
 }

@@ -6,6 +6,8 @@ import common.net.MessageObject;
 import common.net.MessageType;
 import server.Server;
 import server.Service.AuthService;
+import server.Service.ChatRoutingService;
+import server.Service.SingleConversationService;
 
 import java.io.*;
 
@@ -18,7 +20,12 @@ public class ClientHandler implements Runnable {
   public ClientHandler(Socket socket) {
     this.socket = socket;
   }
-
+  public ObjectOutputStream getOutputStream() {
+    return out;
+  } 
+  public ObjectInputStream getInputStream() {
+    return in;
+  }
 
   @Override
   public void run() {
@@ -38,14 +45,30 @@ public class ClientHandler implements Runnable {
           if (response.isSuccess()) {
             this.username = request.getUsername();
             //Add user
-            Server.onlineUsers.put(username,socket);
+            Server.onlineUsers.put(username,this);
             System.out.println(username + " online");
           }
         }
         if (request.getType() == MessageType.REGISTER_REQUEST) {
           AuthService aService = new AuthService();
           MessageObject response = aService.checkConditionForRegisterAndAdd(request);
-          System.out.println("Register from port: " + socket.getPort()); //test
+          //System.out.println("Register from port: " + socket.getPort()); //test
+          out.writeObject(response);
+          out.flush();
+        }
+        if (request.getType() == MessageType.CREATE_SINGLE_CONVERSATION_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          MessageObject response = chatRoutingService.createConversation(request);
+          out.writeObject(response);
+          out.flush();
+        }
+        if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          chatRoutingService.handleReceiveAndSendSingleChatMessage(request);
+        }
+        if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
+          SingleConversationService singleConversationService = new SingleConversationService();
+          MessageObject response = singleConversationService.sendSingleConversationInfo(request.getUserId());
           out.writeObject(response);
           out.flush();
         }

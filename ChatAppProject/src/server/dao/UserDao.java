@@ -68,4 +68,38 @@ public class UserDao {
 
     return false;
   }
+  public int fetchUserID(String username) {
+    String sql = "SELECT user_id FROM Users WHERE username = ?";
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setString(1, username);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt(1);
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return -1;
+  }
+
+  public String fetchUsername(int userId) {
+    String sql = "SELECT username FROM Users WHERE user_id = ?";
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, userId);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString(1);
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return null;
+  }
+
 }
