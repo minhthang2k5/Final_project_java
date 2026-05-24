@@ -12,6 +12,7 @@ public class MainFrame extends JFrame {
   JPanel mainPanel;
   LoginPanel loginPanel;
   RegisterPanel registerPanel;
+  DashBoardPanel dashBoardPanel;
   public MainFrame(Socket socket) throws IOException {
     this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     this.setLayout(new BorderLayout());
@@ -33,10 +34,11 @@ public class MainFrame extends JFrame {
     //Khởi tạo panel
     loginPanel = new LoginPanel(mainPanel,clientAuthService);
     registerPanel = new RegisterPanel(mainPanel, clientAuthService);
-    
+    dashBoardPanel = new DashBoardPanel();
     //Thêm vào panel chính
     mainPanel.add(loginPanel,"loginPanel");
     mainPanel.add(registerPanel,"registerPanel");
+    mainPanel.add(dashBoardPanel,"dashBoardPanel");
 
 
     this.add(mainPanel, BorderLayout.CENTER);

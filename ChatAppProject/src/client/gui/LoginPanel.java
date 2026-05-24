@@ -195,8 +195,9 @@ public class LoginPanel extends JPanel implements ActionListener {
           try {
             MessageObject response = get();
             if (response != null && response.isSuccess()) {
-              System.out.println("Successfully login");
-              setStatusMessage(response.getMessage(), false);
+              clearInput();
+              CardLayout cl = (CardLayout) mainPanel.getLayout();
+              cl.show(mainPanel, "dashBoardPanel");
             } else if (response != null) {
               System.out.println("Fail to login");
               setStatusMessage(response.getMessage(), true);
