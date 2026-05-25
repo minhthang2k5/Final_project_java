@@ -42,6 +42,8 @@ public class MainFrame extends JFrame {
     loginPanel = new LoginPanel(mainPanel,clientAuthService);
     registerPanel = new RegisterPanel(mainPanel, clientAuthService);
     dashBoardPanel = new DashBoardPanel();
+
+    
     //Thêm vào panel chính
     mainPanel.add(loginPanel,"loginPanel");
     mainPanel.add(registerPanel,"registerPanel");

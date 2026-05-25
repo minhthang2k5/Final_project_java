@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 
 import client.gui.DashBoardPanel;
@@ -50,6 +51,10 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
       String displayName, String email, RegisterPanel registerPanel) throws IOException {
     this.pendingRegisterPanel = registerPanel;
     authService.sendRegisterInformation(username, password, confirmPassword, displayName, email);
+  }
+
+  public void requestCreateConversation(String receiverID) throws NumberFormatException, IOException {
+    authService.sendCreateConversationRequest(mainFrame.getCurrentUser().getUserId(), Integer.parseInt(receiverID));
   }
   @Override
   protected Void doInBackground() throws Exception {
@@ -109,6 +114,15 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         model.clear();
         for (SingleConversationInfo info : list) {
             model.addElement(info);
+        }
+      }
+      if (respond.getType() == MessageType.CREATE_SINGLE_CONVERSATION_RESPONSE) {
+        if (respond.isSuccess()) {
+          JOptionPane.showMessageDialog(mainFrame, "Create conversation successful", "Success",
+              JOptionPane.INFORMATION_MESSAGE);
+        } else {
+          String message = respond.getMessage() == null ? "Create conversation failed" : respond.getMessage();
+          JOptionPane.showMessageDialog(mainFrame, message, "Failed", JOptionPane.ERROR_MESSAGE);
         }
       }
     }

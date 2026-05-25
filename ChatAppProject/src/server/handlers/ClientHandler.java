@@ -70,6 +70,15 @@ public class ClientHandler implements Runnable {
           MessageObject response = chatRoutingService.createConversation(request);
           out.writeObject(response);
           out.flush();
+          if (response.isSuccess()) {
+            //Send cho người đối diện
+            singleConversationService.sendStatusOnline(userId);
+            //Send cho bản thân mình 
+            SingleConversationService singleConversationService = new SingleConversationService();
+            MessageObject response2 = singleConversationService.sendSingleConversationInfo(userId);
+            out.writeObject(response2);
+            out.flush();
+          }
         }
         if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
           ChatRoutingService chatRoutingService = new ChatRoutingService();

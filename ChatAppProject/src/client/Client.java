@@ -23,6 +23,7 @@ public class Client {
           mainFrame.getClientAuthService());
       mainFrame.getLoginPanel().setServerHandler(serverHandler);
       mainFrame.getRegisterPanel().setServerHandler(serverHandler);
+      mainFrame.getDashBoardPanel().setServerHandler(serverHandler);
       serverHandler.execute();
       
       //System.out.println("Client local port: " + s.getLocalPort());

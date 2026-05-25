@@ -38,5 +38,12 @@ public class ClientAuthService {
       
   }
 
+  public void sendCreateConversationRequest(int senderID,int receiverID) throws IOException {
+    MessageObject request = new MessageObject(MessageType.CREATE_SINGLE_CONVERSATION_REQUEST);
+    request.setSenderId(senderID);
+    request.setReceiverId(receiverID);
+    out.writeObject(request);
+    out.flush();
+  }
 
 }

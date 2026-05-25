@@ -2,11 +2,19 @@ package client.gui;
 
 import javax.swing.*;
 
+import client.ServerHandler;
 import client.gui.components.UserListCellRenderer;
 import common.models.SingleConversationInfo;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
-public class DashBoardPanel extends JPanel {
+public class DashBoardPanel extends JPanel implements ActionListener, ListSelectionListener {
 	private final JList<SingleConversationInfo> singleList;
 	private final JList<String> groupList;
 	private final JLabel userNameLabel;
@@ -14,16 +22,15 @@ public class DashBoardPanel extends JPanel {
 	private final JButton signOutButton;
 	private final JButton addPeopleButton;
 	private final JButton addGroupButton;
-	private final JTextArea chatArea;
-	private final JTextField chatInput;
-	private final JButton fileButton;
-	private final JButton micButton;
-	private final JButton sendButton;
-
+	private final JPanel chatContainer;
+	private final CardLayout chatLayout;
+	private final Map<String, ChatPanel> chatPanels;
+	ServerHandler serverHandler;
 	public DashBoardPanel() {
 		this.setBounds(0, 0, 900, 700);
 		this.setLayout(new BorderLayout());
 		this.setBackground(new Color(240, 240, 240));
+		this.chatPanels = new HashMap<>();
 
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		leftPanel.setPreferredSize(new Dimension(260, 0));
@@ -69,6 +76,8 @@ public class DashBoardPanel extends JPanel {
 		groupList.setFixedCellHeight(56);
 		singleList.setCellRenderer(new UserListCellRenderer());
 		groupList.setCellRenderer(new UserListCellRenderer());
+		singleList.addListSelectionListener(this);
+		
 		groupModel.addElement("Java class group");
 		groupModel.addElement("Database study");
 
@@ -79,7 +88,9 @@ public class DashBoardPanel extends JPanel {
 
 		addPeopleButton = createTabActionButton("add people");
 		addGroupButton = createTabActionButton("add group");
-		addPeopleButton.addActionListener(e -> showAddPeopleDialog());
+		addPeopleButton.addActionListener(this);
+		addGroupButton.addActionListener(this);
+
 		JPanel singleTab = buildTabPanel(singleScroll, addPeopleButton);
 		JPanel groupTab = buildTabPanel(groupScroll, addGroupButton);
 
@@ -93,66 +104,12 @@ public class DashBoardPanel extends JPanel {
 		JPanel rightPanel = new JPanel(new BorderLayout());
 		rightPanel.setBackground(new Color(248, 248, 248));
 
-		JPanel headerPanel = new JPanel(new BorderLayout());
-		headerPanel.setBackground(Color.white);
-		headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
-		JLabel headerTitle = new JLabel("Conversation");
-		headerTitle.setFont(new Font(null, Font.BOLD, 16));
-		headerTitle.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
-		headerPanel.add(headerTitle, BorderLayout.WEST);
-		rightPanel.add(headerPanel, BorderLayout.NORTH);
-
-		chatArea = new JTextArea();
-		chatArea.setEditable(false);
-		chatArea.setLineWrap(true);
-		chatArea.setWrapStyleWord(true);
-		chatArea.setFont(new Font(null, Font.PLAIN, 14));
-		chatArea.setBackground(new Color(250, 250, 250));
-		chatArea.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-		JScrollPane chatScroll = new JScrollPane(chatArea);
-		chatScroll.setBorder(BorderFactory.createEmptyBorder());
-		rightPanel.add(chatScroll, BorderLayout.CENTER);
-
-		JPanel inputPanel = new JPanel(new BorderLayout(8, 0));
-		inputPanel.setBackground(Color.white);
-		inputPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
-		chatInput = new JTextField();
-		chatInput.setFont(new Font(null, Font.PLAIN, 14));
-		chatInput.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
-		ImageIcon fileIcon = loadIcon("/client/gui/asset/file.png", 18);
-		ImageIcon micIcon = loadIcon("/client/gui/asset/microphone.png", 18);
-		fileButton = new JButton(fileIcon);
-		micButton = new JButton(micIcon);
-		fileButton.setToolTipText("Attach file");
-		micButton.setToolTipText("Voice message");
-		fileButton.setFocusable(false);
-		micButton.setFocusable(false);
-		fileButton.setOpaque(false);
-		micButton.setOpaque(false);
-		fileButton.setContentAreaFilled(false);
-		micButton.setContentAreaFilled(false);
-		fileButton.setBorderPainted(false);
-		micButton.setBorderPainted(false);
-		fileButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-		micButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-		fileButton.setPreferredSize(new Dimension(36, 36));
-		micButton.setPreferredSize(new Dimension(36, 36));
-		sendButton = new JButton("Send");
-		sendButton.setFocusable(false);
-		sendButton.setBackground(new Color(0x63, 0x66, 0xF1));
-		sendButton.setForeground(Color.WHITE);
-		sendButton.setFont(new Font(null, Font.BOLD, 12));
-		sendButton.setOpaque(true);
-		sendButton.setBorderPainted(false);
-		sendButton.setPreferredSize(new Dimension(90, 36));
-		inputPanel.add(chatInput, BorderLayout.CENTER);
-		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
-		actionPanel.setOpaque(false);
-		actionPanel.add(fileButton);
-		actionPanel.add(micButton);
-		actionPanel.add(sendButton);
-		inputPanel.add(actionPanel, BorderLayout.EAST);
-		rightPanel.add(inputPanel, BorderLayout.SOUTH);
+		chatLayout = new CardLayout();
+		chatContainer = new JPanel(chatLayout);
+		chatContainer.setBackground(new Color(248, 248, 248));
+		chatContainer.add(buildEmptyChatState(), "empty");
+		chatLayout.show(chatContainer, "empty");
+		rightPanel.add(chatContainer, BorderLayout.CENTER);
 
 		this.add(leftPanel, BorderLayout.WEST);
 		this.add(rightPanel, BorderLayout.CENTER);
@@ -194,48 +151,38 @@ public class DashBoardPanel extends JPanel {
 		return addGroupButton;
 	}
 
-	public JTextArea getChatArea() {
-		return chatArea;
+	public ChatPanel getActiveChatPanel() {
+		return null;  // Không còn cần activeChatPanel
 	}
 
-	public JTextField getChatInput() {
-		return chatInput;
+	public void openChat(String userId, String displayName) {
+		// Kiểm tra xem đã mở chat này chưa
+		ChatPanel chatPanel = chatPanels.get(userId);
+		if (chatPanel == null) {
+			// Tạo ChatPanel mới nếu chưa có
+			chatPanel = new ChatPanel(displayName);
+			chatPanels.put(userId, chatPanel);
+			chatContainer.add(chatPanel, userId);
+		}
+		// Hiển thị ChatPanel
+		chatLayout.show(chatContainer, userId);
 	}
 
-	public JButton getFileButton() {
-		return fileButton;
+	public void setChatPanel(ChatPanel chatPanel, String userId) {
+		// Dùng hàm này nếu bạn muốn tự tạo ChatPanel
+		if (chatPanel != null) {
+			chatPanels.put(userId, chatPanel);
+			chatContainer.add(chatPanel, userId);
+			chatLayout.show(chatContainer, userId);
+		}
 	}
 
-	public JButton getMicButton() {
-		return micButton;
+	public ChatPanel getChatPanel(String userId) {
+		return chatPanels.get(userId);
 	}
 
-	public JButton getSendButton() {
-		return sendButton;
-	}
-
-	private void showAddPeopleDialog() {
-		JDialog dialog = new JDialog((Frame) null, "Add People", true);
-		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		dialog.setLayout(new BorderLayout(12, 12));
-		dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-
-		JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
-		JLabel label = new JLabel("User ID");
-		JTextField userIdField = new JTextField();
-		inputPanel.add(label, BorderLayout.NORTH);
-		inputPanel.add(userIdField, BorderLayout.CENTER);
-
-		JButton addButton = new JButton("Add");
-		addButton.addActionListener(e -> dialog.dispose());
-		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-		actionPanel.add(addButton);
-
-		dialog.add(inputPanel, BorderLayout.CENTER);
-		dialog.add(actionPanel, BorderLayout.SOUTH);
-		dialog.setSize(320, 150);
-		dialog.setLocationRelativeTo(this);
-		dialog.setVisible(true);
+	public void setServerHandler(ServerHandler serverHandler) {
+		this.serverHandler = serverHandler;
 	}
 
 	private static JPanel buildTabPanel(JScrollPane listScroll, JButton actionButton) {
@@ -276,9 +223,81 @@ public class DashBoardPanel extends JPanel {
 		return new ImageIcon(image);
 	}
 
+	private static JPanel buildEmptyChatState() {
+		JPanel emptyPanel = new JPanel(new GridBagLayout());
+		emptyPanel.setBackground(new Color(248, 248, 248));
+		JLabel label = new JLabel("Select a conversation");
+		label.setForeground(new Color(120, 120, 120));
+		label.setFont(new Font(null, Font.PLAIN, 14));
+		emptyPanel.add(label);
+		return emptyPanel;
+	}
+
 
 	public DefaultListModel<SingleConversationInfo> getSingleListModel() {
     return (DefaultListModel<SingleConversationInfo>) singleList.getModel();
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == addPeopleButton) {
+			showAddPeopleDialog();
+		}
+	}
+
+	@Override
+	public void valueChanged(ListSelectionEvent e) {
+		if (e.getValueIsAdjusting()) {
+			return;
+		}
+		if (e.getSource() == singleList) {
+			SingleConversationInfo selected = singleList.getSelectedValue();
+			if (selected != null) {
+				openChat(String.valueOf(selected.getUserId()), selected.getDisplayName());
+			}
+		}
+	}
+
+	private void showAddPeopleDialog() {
+		JDialog dialog = new JDialog((Frame) null, "Add People", true);
+		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		dialog.setLayout(new BorderLayout(12, 12));
+		dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+		JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
+		JLabel label = new JLabel("User ID");
+		JTextField userIdField = new JTextField();
+		inputPanel.add(label, BorderLayout.NORTH);
+		inputPanel.add(userIdField, BorderLayout.CENTER);
+
+		JButton addButton = new JButton("Add");
+		addButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String userIdText = userIdField.getText() == null ? "" : userIdField.getText().trim();
+				if (userIdText.isEmpty() || !userIdText.matches("\\d+")) {
+					JOptionPane.showMessageDialog(dialog, "User ID must be a number", "Invalid input",
+							JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				try {
+					serverHandler.requestCreateConversation(userIdText);
+					dialog.dispose();
+				} catch (NumberFormatException | IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+			
+		});
+		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+		actionPanel.add(addButton);
+
+		dialog.add(inputPanel, BorderLayout.CENTER);
+		dialog.add(actionPanel, BorderLayout.SOUTH);
+		dialog.setSize(320, 150);
+		dialog.setLocationRelativeTo(this);
+		dialog.setVisible(true);
 	}
 
 }
