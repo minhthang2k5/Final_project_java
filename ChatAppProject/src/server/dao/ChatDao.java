@@ -98,23 +98,29 @@ public class ChatDao {
     }
   }
 
-  public boolean writeMessage(int senderId, int conversationID, String messagesChat) {
+  public int writeMessage(int senderId, int conversationID, String messagesChat) {
     String sql = """
       INSERT INTO messages (conversation_id, sender_id, type, content_text)
       VALUES (?, ?, 'text', ?)
       """;
     try (Connection con = DBConnection.getConnection();
-        PreparedStatement pStatement = con.prepareStatement(sql)) {
+        PreparedStatement pStatement = con.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
       pStatement.setInt(1, conversationID);
       pStatement.setInt(2, senderId);
       pStatement.setString(3, messagesChat);
       int rows = pStatement.executeUpdate();
-      return rows > 0;
+      if (rows > 0) {
+        try (ResultSet keys = pStatement.getGeneratedKeys()) {
+          if (keys.next()) {
+            return keys.getInt(1);
+          }
+        }
+      }
     } catch (SQLException e) {
       e.printStackTrace();
     }
 
-    return false;
+    return -1;
   }
 
   public String[] getUsernameInConversation(int conversationID) {
@@ -176,5 +182,28 @@ public class ChatDao {
 
     return result;
   }
+
+  public int getTheOtherUserInSingleConversation(int conversationID, int userID) {
+    String sql = """
+      SELECT user_id 
+      FROM participants 
+      WHERE conversation_id = ? 
+        AND user_id <> ?
+      """;
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, conversationID);
+      pStatement.setInt(2, userID);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt("user_id");
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return -1;
+  }
+
 
 }

@@ -35,41 +35,20 @@ public class ChatRoutingService {
     return response;
   }
 
-  public void handleReceiveAndSendSingleChatMessage(MessageObject request) {
-    System.out.println("Here2");
-    int senderId = request.getSenderId();
+
+
+  public MessageObject handleReceiveSingleChatMessage(MessageObject request) {
+    int senderID = request.getSenderId();
     int conversationID = request.getConversationId();
-    String senderUsername = userDao.fetchUsername(senderId);
-    String chatMsg = request.getChatMsg();
+    String chatMSG = request.getChatMsg();
+    int messageID = chatDao.writeMessage(senderID, conversationID, chatMSG);
     MessageObject response = new MessageObject(MessageType.SEND_SINGLE_CHAT_MESSAGE_RESPONSE);
-    response.setChatMsg(chatMsg);
+    response.setChatMsg(chatMSG);
+    response.setSenderId(senderID);
     response.setConversationId(conversationID);
-    //Gửi tin nhắn
-    String[] listUsernameInConversation = chatDao.getUsernameInConversation(conversationID);
-    String receiverUsername = null;
-    if (senderUsername.equals(listUsernameInConversation[0])) {
-      receiverUsername = listUsernameInConversation[1];
-    }
-    else {
-      receiverUsername = listUsernameInConversation[0];
-    }
-    ClientHandler clientHandler = Server.onlineUsers.get(receiverUsername);
-    if (clientHandler != null) {
-      try {
-      clientHandler.getOutputStream().writeObject(response);
-      clientHandler.getOutputStream().flush();
-  
-
-
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-    //Lưu database
-    chatDao.writeMessage(senderId, conversationID, chatMsg);
+    response.setMessageId(messageID);
+    return response;
   }
-
-  
 
 
   

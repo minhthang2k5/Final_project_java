@@ -123,7 +123,14 @@ public class MessageObject implements Serializable {
     return this.listSingleUser;
   }
 
-  public get
+
+  public void setMessageId(int messageID) {
+    this.messageID = messageID;
+  }
+
+  public int getMessageId() {
+    return messageID;
+  }
 
 
 } 

@@ -8,6 +8,8 @@ import server.Server;
 import server.Service.AuthService;
 import server.Service.ChatRoutingService;
 import server.Service.SingleConversationService;
+import server.dao.ChatDao;
+import server.dao.UserDao;
 
 import java.io.*;
 
@@ -28,11 +30,6 @@ public class ClientHandler implements Runnable {
     return in;
   }
 
-  public void sendStatusOnline() throws IOException {
-    MessageObject response = singleConversationService.sendSingleConversationInfo(userId);
-    out.writeObject(response);
-    out.flush();
-  }
 
   @Override
   public void run() {
@@ -80,10 +77,6 @@ public class ClientHandler implements Runnable {
             out.flush();
           }
         }
-        if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
-          ChatRoutingService chatRoutingService = new ChatRoutingService();
-          chatRoutingService.handleReceiveAndSendSingleChatMessage(request);
-        }
         if (request.getType() == MessageType.GET_LIST_SINGLE_USER_REQUEST) {
           SingleConversationService singleConversationService = new SingleConversationService();
           System.out.println(request.getUserId());
@@ -91,7 +84,22 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           out.flush();
         }
-        
+        if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          MessageObject response = chatRoutingService.handleReceiveSingleChatMessage(request);
+          //Gửi cho chính mình
+          sendChatMessage(response);
+          //Gửi cho người trong cuộc trò chuyện nếu online
+          UserDao userDao = new UserDao();
+          ChatDao chatDao = new ChatDao();
+          int otherUserId = chatDao.getTheOtherUserInSingleConversation(request.getConversationId(), userId);
+          if (otherUserId > 0) {
+            String otherUsername = userDao.fetchUsername(otherUserId);
+            if (otherUsername != null && Server.onlineUsers.containsKey(otherUsername)) {
+              Server.onlineUsers.get(otherUsername).sendChatMessage(response);
+            }
+          }
+        }
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {
@@ -120,4 +128,14 @@ public class ClientHandler implements Runnable {
     }
   }
   
+  public void sendStatusOnline() throws IOException {
+    MessageObject response = singleConversationService.sendSingleConversationInfo(userId);
+    out.writeObject(response);
+    out.flush();
+  }
+
+  public void sendChatMessage(MessageObject response) throws IOException {
+    out.writeObject(response);
+    out.flush();
+  }  
 }
