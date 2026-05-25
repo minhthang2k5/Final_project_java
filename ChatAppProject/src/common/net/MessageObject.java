@@ -22,7 +22,7 @@ public class MessageObject implements Serializable {
   private int conversationId;
   private String chatMsg;
   private ArrayList<SingleConversationInfo> listSingleUser;
-  
+  private int messageID;
   
   
   public MessageObject(MessageType type) {
@@ -122,5 +122,8 @@ public class MessageObject implements Serializable {
   public ArrayList<SingleConversationInfo> getListSingleUser() {
     return this.listSingleUser;
   }
+
+  public get
+
 
 } 

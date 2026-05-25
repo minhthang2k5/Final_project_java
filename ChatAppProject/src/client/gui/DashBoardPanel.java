@@ -24,7 +24,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 	private final JButton addGroupButton;
 	private final JPanel chatContainer;
 	private final CardLayout chatLayout;
-	private final Map<String, ChatPanel> chatPanels;
+	private final Map<Integer, ChatPanel> chatPanels; // conversationId
 	ServerHandler serverHandler;
 	public DashBoardPanel() {
 		this.setBounds(0, 0, 900, 700);
@@ -155,30 +155,37 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		return null;  // Không còn cần activeChatPanel
 	}
 
-	public void openChat(String userId, String displayName) {
+	public void openChat(SingleConversationInfo conversationInfo) {
+		if (conversationInfo == null) {
+			return;
+		}
+		int conversationId = conversationInfo.getConversationId();
+		String conversationKey = String.valueOf(conversationId);
 		// Kiểm tra xem đã mở chat này chưa
-		ChatPanel chatPanel = chatPanels.get(userId);
+		ChatPanel chatPanel = chatPanels.get(conversationId);
 		if (chatPanel == null) {
 			// Tạo ChatPanel mới nếu chưa có
-			chatPanel = new ChatPanel(displayName);
-			chatPanels.put(userId, chatPanel);
-			chatContainer.add(chatPanel, userId);
+			chatPanel = new ChatPanel(conversationInfo.getDisplayName());
+			chatPanel.setConversationInfo(conversationInfo);
+			chatPanels.put(conversationId, chatPanel);
+			chatContainer.add(chatPanel, conversationKey);
 		}
 		// Hiển thị ChatPanel
-		chatLayout.show(chatContainer, userId);
+		chatLayout.show(chatContainer, conversationKey);
 	}
 
-	public void setChatPanel(ChatPanel chatPanel, String userId) {
+	public void setChatPanel(ChatPanel chatPanel, int conversationId) {
 		// Dùng hàm này nếu bạn muốn tự tạo ChatPanel
 		if (chatPanel != null) {
-			chatPanels.put(userId, chatPanel);
-			chatContainer.add(chatPanel, userId);
-			chatLayout.show(chatContainer, userId);
+			String conversationKey = String.valueOf(conversationId);
+			chatPanels.put(conversationId, chatPanel);
+			chatContainer.add(chatPanel, conversationKey);
+			chatLayout.show(chatContainer, conversationKey);
 		}
 	}
 
-	public ChatPanel getChatPanel(String userId) {
-		return chatPanels.get(userId);
+	public ChatPanel getChatPanel(int conversationId) {
+		return chatPanels.get(conversationId);
 	}
 
 	public void setServerHandler(ServerHandler serverHandler) {
@@ -253,7 +260,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		if (e.getSource() == singleList) {
 			SingleConversationInfo selected = singleList.getSelectedValue();
 			if (selected != null) {
-				openChat(String.valueOf(selected.getUserId()), selected.getDisplayName());
+				openChat(selected);
 			}
 		}
 	}

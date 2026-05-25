@@ -7,11 +7,18 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import client.gui.components.MessageBubble;
+import common.models.SingleConversationInfo;
+
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ChatPanel extends JPanel {
 	private static final int MAX_BUBBLE_TEXT_WIDTH = 320;
 
+	private SingleConversationInfo conversationInfo;
+	private final Map<Integer, MessageBubble> messageBubbles;
 	private final JLabel headerTitle;
 	private final JTextPane chatArea;
 	private final JTextField chatInput;
@@ -26,6 +33,7 @@ public class ChatPanel extends JPanel {
 	public ChatPanel(String title) {
 		setLayout(new BorderLayout());
 		setBackground(new Color(248, 248, 248));
+		this.messageBubbles = new HashMap<>();
 
 		JPanel headerPanel = new JPanel(new BorderLayout());
 		headerPanel.setBackground(Color.white);
@@ -97,6 +105,14 @@ public class ChatPanel extends JPanel {
 		return headerTitle;
 	}
 
+	public void setConversationInfo(SingleConversationInfo conversationInfo) {
+		this.conversationInfo = conversationInfo;
+	}
+
+	public SingleConversationInfo getConversationInfo() {
+		return conversationInfo;
+	}
+
 	public JTextPane getChatArea() {
 		return chatArea;
 	}
@@ -119,6 +135,10 @@ public class ChatPanel extends JPanel {
 	}
 
 	public void appendMessageBubble(String displayName, String text, boolean isSelf) {
+		appendMessageBubble(-1, displayName, text, isSelf);
+	}
+
+	public void appendMessageBubble(int messageId, String displayName, String text, boolean isSelf) {
 		if (text == null || text.trim().isEmpty()) {
 			return;
 		}
@@ -129,7 +149,11 @@ public class ChatPanel extends JPanel {
 		StyleConstants.setSpaceAbove(paragraphStyle, 6f);
 		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
 		chatArea.setCaretPosition(insertPos);
-		chatArea.insertComponent(buildMessageBubble(displayName, text.trim(), isSelf));
+		MessageBubble bubble = new MessageBubble(messageId, displayName, text.trim(), isSelf, MAX_BUBBLE_TEXT_WIDTH);
+		if (messageId >= 0) {
+			messageBubbles.put(messageId, bubble);
+		}
+		chatArea.insertComponent(bubble);
 		document.setParagraphAttributes(insertPos, 1, paragraphStyle, false);
 		try {
 			document.insertString(document.getLength(), "\n", null);
@@ -155,44 +179,6 @@ public class ChatPanel extends JPanel {
 		return sendButton;
 	}
 
-	private JComponent buildMessageBubble(String displayName, String text, boolean isSelf) {
-		JTextArea messageText = new JTextArea(text);
-		messageText.setEditable(false);
-		messageText.setLineWrap(true);
-		messageText.setWrapStyleWord(true);
-		messageText.setFont(new Font(null, Font.PLAIN, 14));
-		messageText.setOpaque(false);
-		messageText.setBorder(null);
-		int textWidth = measureTextWidth(text, messageText.getFontMetrics(messageText.getFont()));
-		int targetWidth = Math.min(textWidth, MAX_BUBBLE_TEXT_WIDTH);
-		messageText.setSize(new Dimension(targetWidth, Short.MAX_VALUE));
-		Dimension textPreferred = messageText.getPreferredSize();
-		messageText.setPreferredSize(new Dimension(targetWidth, textPreferred.height));
-
-		JPanel content = new JPanel();
-		content.setOpaque(false);
-		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-		if (displayName != null && !displayName.trim().isEmpty()) {
-			JLabel nameLabel = new JLabel(displayName.trim());
-			nameLabel.setFont(new Font(null, Font.BOLD, 11));
-			nameLabel.setForeground(new Color(120, 120, 120));
-			nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-			content.add(nameLabel);
-			content.add(Box.createVerticalStrut(4));
-		}
-		messageText.setAlignmentX(Component.LEFT_ALIGNMENT);
-		content.add(messageText);
-
-		JPanel bubble = new JPanel(new BorderLayout());
-		bubble.setOpaque(true);
-		bubble.setBackground(isSelf ? new Color(224, 231, 255) : Color.WHITE);
-		bubble.setBorder(BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(new Color(210, 210, 210), 1, true),
-				BorderFactory.createEmptyBorder(6, 10, 6, 10)));
-		bubble.add(content, BorderLayout.CENTER);
-		return bubble;
-	}
-
 	private void sendCurrentMessage() {
 		String text = chatInput.getText();
 		if (text == null || text.trim().isEmpty()) {
@@ -201,19 +187,6 @@ public class ChatPanel extends JPanel {
 		appendMessageBubble("You", text.trim(), true);
 		chatInput.setText("");
 		chatInput.requestFocusInWindow();
-	}
-
-	private int measureTextWidth(String text, FontMetrics metrics) {
-		if (text == null || text.isEmpty()) {
-			return 10;
-		}
-		int maxWidth = 10;
-		String[] lines = text.split("\n", -1);
-		for (String line : lines) {
-			String normalized = line.replace("\r", "");
-			maxWidth = Math.max(maxWidth, metrics.stringWidth(normalized));
-		}
-		return maxWidth + 4;
 	}
 
 	private static ImageIcon loadIcon(String path, int size) {
