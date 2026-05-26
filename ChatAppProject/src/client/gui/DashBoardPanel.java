@@ -90,6 +90,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		addGroupButton = createTabActionButton("add group");
 		addPeopleButton.addActionListener(this);
 		addGroupButton.addActionListener(this);
+		signOutButton.addActionListener(this);
 
 		JPanel singleTab = buildTabPanel(singleScroll, addPeopleButton);
 		JPanel groupTab = buildTabPanel(groupScroll, addGroupButton);
@@ -268,9 +269,37 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == signOutButton) {
+			if (serverHandler == null) {
+				JOptionPane.showMessageDialog(this, "Sign-out handler not ready", "Error",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			try {
+				serverHandler.requestSignOut();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Sign-out failed", "Error",
+						JOptionPane.ERROR_MESSAGE);
+			}
+			return;
+		}
 		if (e.getSource() == addPeopleButton) {
 			showAddPeopleDialog();
 		}
+	}
+
+	public void resetForSignOut() {
+		setUserNameText("");
+		setUserIdText("");
+		DefaultListModel<SingleConversationInfo> model = getSingleListModel();
+		model.clear();
+		chatPanels.clear();
+		chatContainer.removeAll();
+		chatContainer.add(buildEmptyChatState(), "empty");
+		chatLayout.show(chatContainer, "empty");
+		chatContainer.revalidate();
+		chatContainer.repaint();
 	}
 
 	@Override

@@ -68,6 +68,26 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
   public void requestCreateConversation(String receiverID) throws NumberFormatException, IOException {
     authService.sendCreateConversationRequest(mainFrame.getCurrentUser().getUserId(), Integer.parseInt(receiverID));
   }
+
+  public void requestSignOut() throws IOException {
+    String username = mainFrame.getCurrentUser().getUsername();
+    int userId = mainFrame.getCurrentUser().getUserId();
+    if (username == null || username.trim().isEmpty() || userId <= 0) {
+      mainFrame.showLoginPanel();
+      return;
+    }
+
+    MessageObject request = new MessageObject(MessageType.SIGNOUT_REQUEST);
+    request.setUsername(username);
+    request.setUserId(userId);
+    out.writeObject(request);
+    out.flush();
+
+    mainFrame.getCurrentUser().setUsername(null);
+    mainFrame.getCurrentUser().setUserId(0);
+    mainFrame.getDashBoardPanel().resetForSignOut();
+    mainFrame.showLoginPanel();
+  }
   @Override
   protected Void doInBackground() throws Exception {
     while (!isCancelled()) {

@@ -100,6 +100,15 @@ public class ClientHandler implements Runnable {
             }
           }
         }
+        if (request.getType() == MessageType.SIGNOUT_REQUEST) {
+          if (this.username != null) {
+            Server.onlineUsers.remove(this.username);
+            System.out.println(this.username + " offline");
+            singleConversationService.sendStatusOnline(this.userId);
+          }
+          this.username = null;
+          this.userId = 0;
+        }
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

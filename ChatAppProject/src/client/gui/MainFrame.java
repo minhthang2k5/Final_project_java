@@ -78,4 +78,9 @@ public class MainFrame extends JFrame {
     CardLayout cl = (CardLayout) mainPanel.getLayout();
     cl.show(mainPanel, "dashBoardPanel");
   }
+
+  public void showLoginPanel() {
+    CardLayout cl = (CardLayout) mainPanel.getLayout();
+    cl.show(mainPanel, "loginPanel");
+  }
 }
