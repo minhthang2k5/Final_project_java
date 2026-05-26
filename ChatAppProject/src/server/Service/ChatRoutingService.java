@@ -68,6 +68,13 @@ public class ChatRoutingService {
     return response;
   }
 
+  public MessageObject handleGetHistoryChat(MessageObject request) {
+    int conversationID = request.getConversationId();
+    MessageObject response = new MessageObject(MessageType.GET_HISTORY_CHAT_RESPONSE);
+    response.setConversationId(conversationID);
+    response.setListMessage(chatDao.getListMessageInConversation(conversationID));
+    return response;
+  }
 
   
 }

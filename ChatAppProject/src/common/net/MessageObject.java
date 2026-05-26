@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import common.models.GroupConversationInfo;
+import common.models.MessageChat;
 import common.models.SingleConversationInfo;
 
 public class MessageObject implements Serializable {
@@ -27,6 +28,7 @@ public class MessageObject implements Serializable {
   private int messageID;
   private ArrayList<Integer> listUserID;
   private String nameGroup;
+  private ArrayList<MessageChat> listMessage;
   
   public MessageObject(MessageType type) {
         this.type = type;
@@ -156,5 +158,13 @@ public class MessageObject implements Serializable {
   }
   public String getNameGroup() {
     return this.nameGroup;
+  }
+
+
+  public void setListMessage(ArrayList<MessageChat> listMessage) {
+    this.listMessage = listMessage;
+  }
+  public ArrayList<MessageChat> getListMessage() {
+    return this.listMessage;
   }
 } 

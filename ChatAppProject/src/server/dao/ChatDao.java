@@ -9,6 +9,7 @@ import java.util.List;
 
 import common.models.DBConnection;
 import common.models.GroupConversationInfo;
+import common.models.MessageChat;
 import common.models.SingleConversationInfo;
 
 public class ChatDao {
@@ -321,4 +322,43 @@ public class ChatDao {
     return usernames.toArray(new String[0]);
   }
 
+  public ArrayList<MessageChat> getListMessageInConversation(int conversationID) {
+    ArrayList<MessageChat> result = new ArrayList<>();
+    if (conversationID <= 0) {
+      return result;
+    }
+
+    String sql = """
+      SELECT message_id, sender_id, type, content_text, file_path
+      FROM messages
+      WHERE conversation_id = ?
+      ORDER BY message_id
+      """;
+
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, conversationID);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        while (rs.next()) {
+          int messageId = rs.getInt("message_id");
+          int senderId = rs.getInt("sender_id");
+          String type = rs.getString("type");
+          String content = rs.getString("content_text");
+          String filePath = rs.getString("file_path");
+          boolean isText = type == null || type.equalsIgnoreCase("text");
+          MessageChat message = isText
+              ? new MessageChat(messageId, senderId, content)
+              : new MessageChat(messageId, senderId, content, filePath);
+          if (!isText) {
+            message.setType("file");
+          }
+          result.add(message);
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return result;
+  }
 }

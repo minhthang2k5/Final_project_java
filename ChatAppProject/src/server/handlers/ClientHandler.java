@@ -166,6 +166,12 @@ public class ClientHandler implements Runnable {
             }
           }
         }
+        if (request.getType() == MessageType.GET_HISTORY_CHAT_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          MessageObject response = chatRoutingService.handleGetHistoryChat(request);
+          out.writeObject(response);
+          out.flush();
+        }
       
       
       }
