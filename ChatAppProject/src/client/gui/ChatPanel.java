@@ -7,17 +7,21 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import client.ServerHandler;
 import client.gui.components.MessageBubble;
 import common.models.SingleConversationInfo;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ChatPanel extends JPanel {
+public class ChatPanel extends JPanel  {
 	private static final int MAX_BUBBLE_TEXT_WIDTH = 320;
 
 	private SingleConversationInfo conversationInfo;
+	private final int conversationId;
+	private final ServerHandler serverHandler;
 	private final Map<Integer, MessageBubble> messageBubbles;
 	private final JLabel headerTitle;
 	private final JTextPane chatArea;
@@ -27,10 +31,16 @@ public class ChatPanel extends JPanel {
 	private final JButton sendButton;
 
 	public ChatPanel() {
-		this("Conversation");
+		this("Conversation", -1, null);
 	}
 
 	public ChatPanel(String title) {
+		this(title, -1, null);
+	}
+
+	public ChatPanel(String title, int conversationId, ServerHandler serverHandler) {
+		this.conversationId = conversationId;
+		this.serverHandler = serverHandler;
 		setLayout(new BorderLayout());
 		setBackground(new Color(248, 248, 248));
 		this.messageBubbles = new HashMap<>();
@@ -184,7 +194,16 @@ public class ChatPanel extends JPanel {
 		if (text == null || text.trim().isEmpty()) {
 			return;
 		}
-		appendMessageBubble("You", text.trim(), true);
+		if (serverHandler == null || conversationId <= 0) {
+			return;
+		}
+		try {
+			serverHandler.requestSendMessage(text.trim(), conversationId);
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			return;
+		}
+
 		chatInput.setText("");
 		chatInput.requestFocusInWindow();
 	}
@@ -198,4 +217,6 @@ public class ChatPanel extends JPanel {
 		Image image = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
 		return new ImageIcon(image);
 	}
+
+
 }

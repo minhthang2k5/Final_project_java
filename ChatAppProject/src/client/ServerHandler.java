@@ -10,6 +10,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 
+import client.gui.ChatPanel;
 import client.gui.DashBoardPanel;
 import client.gui.LoginPanel;
 import client.gui.MainFrame;
@@ -27,6 +28,7 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
   private ClientAuthService authService;
   private LoginPanel pendingLoginPanel;
   private RegisterPanel pendingRegisterPanel;
+  private DashBoardPanel pendingDashBoardPanel;
 
   public ObjectOutputStream getOutputStream() {
     return out;
@@ -40,6 +42,7 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     this.in = in;
     this.mainFrame = mainFrame;
     this.authService = authService;
+    this.pendingDashBoardPanel = mainFrame.getDashBoardPanel();
   }
 
   public void requestLogin(String username, String password, LoginPanel loginPanel) throws IOException {
@@ -51,6 +54,15 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
       String displayName, String email, RegisterPanel registerPanel) throws IOException {
     this.pendingRegisterPanel = registerPanel;
     authService.sendRegisterInformation(username, password, confirmPassword, displayName, email);
+  }
+
+  public void requestSendMessage(String msg,int conservationID) throws IOException {
+    MessageObject request = new MessageObject(MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST);
+		request.setChatMsg(msg);
+		request.setSenderId(mainFrame.getCurrentUser().getUserId());
+    request.setConversationId(conservationID);
+    out.writeObject(request);
+    out.flush();
   }
 
   public void requestCreateConversation(String receiverID) throws NumberFormatException, IOException {
@@ -114,6 +126,7 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         model.clear();
         for (SingleConversationInfo info : list) {
             model.addElement(info);
+            //pendingDashBoardPanel.createChatPanel(info);
         }
       }
       if (respond.getType() == MessageType.CREATE_SINGLE_CONVERSATION_RESPONSE) {
@@ -125,6 +138,33 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
           JOptionPane.showMessageDialog(mainFrame, message, "Failed", JOptionPane.ERROR_MESSAGE);
         }
       }
+      if (respond.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_RESPONSE) {
+        int conversationId = respond.getConversationId();
+        DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+        ChatPanel chatPanel = dashBoardPanel.getChatPanel(conversationId);
+
+        SingleConversationInfo conversationInfo = null;
+        DefaultListModel<SingleConversationInfo> model = dashBoardPanel.getSingleListModel();
+        for (int i = 0; i < model.size(); i++) {
+          SingleConversationInfo info = model.get(i);
+          if (info.getConversationId() == conversationId) {
+            conversationInfo = info;
+            break;
+          }
+        }
+
+        // if (chatPanel == null && conversationInfo != null) {
+        //   chatPanel = dashBoardPanel.createChatPanel(conversationInfo);
+        // }
+
+        if (chatPanel != null) {
+          boolean isSelf = respond.getSenderId() == mainFrame.getCurrentUser().getUserId();
+          String displayName = isSelf ? "You" : (conversationInfo != null ? conversationInfo.getDisplayName() : null);
+          chatPanel.appendMessageBubble(respond.getMessageId(), displayName, respond.getChatMsg(), isSelf);
+        }
+      }
+    
+    
     }
   }
 } 

@@ -161,14 +161,12 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		}
 		int conversationId = conversationInfo.getConversationId();
 		String conversationKey = String.valueOf(conversationId);
+		
 		// Kiểm tra xem đã mở chat này chưa
 		ChatPanel chatPanel = chatPanels.get(conversationId);
 		if (chatPanel == null) {
 			// Tạo ChatPanel mới nếu chưa có
-			chatPanel = new ChatPanel(conversationInfo.getDisplayName());
-			chatPanel.setConversationInfo(conversationInfo);
-			chatPanels.put(conversationId, chatPanel);
-			chatContainer.add(chatPanel, conversationKey);
+			chatPanel = createChatPanel(conversationInfo);
 		}
 		// Hiển thị ChatPanel
 		chatLayout.show(chatContainer, conversationKey);
@@ -186,6 +184,29 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 
 	public ChatPanel getChatPanel(int conversationId) {
 		return chatPanels.get(conversationId);
+	}
+
+	public ChatPanel createChatPanel(SingleConversationInfo conversationInfo) {
+		if (conversationInfo == null) {
+			return null;
+		}
+		
+		int conversationId = conversationInfo.getConversationId();
+		String conversationKey = String.valueOf(conversationId);
+		
+		// Kiểm tra xem ChatPanel đã tồn tại chưa
+		ChatPanel chatPanel = chatPanels.get(conversationId);
+		if (chatPanel != null) {
+			return chatPanel;  // Đã tồn tại thì trả về luôn
+		}
+		
+		// Tạo ChatPanel mới
+		chatPanel = new ChatPanel(conversationInfo.getDisplayName(), conversationId, serverHandler);
+		chatPanel.setConversationInfo(conversationInfo);
+		chatPanels.put(conversationId, chatPanel);
+		chatContainer.add(chatPanel, conversationKey);
+		
+		return chatPanel;
 	}
 
 	public void setServerHandler(ServerHandler serverHandler) {
