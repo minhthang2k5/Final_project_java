@@ -85,6 +85,20 @@ public class UserDao {
     return -1;
   }
 
+  public boolean checkExistsUserId(int userId) {
+    String sql = "SELECT 1 FROM Users WHERE user_id = ?";
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, userId);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        return rs.next();
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
+
   public String fetchUsername(int userId) {
     String sql = "SELECT username FROM Users WHERE user_id = ?";
     try (Connection con = DBConnection.getConnection();
@@ -102,4 +116,5 @@ public class UserDao {
     return null;
   }
 
+  
 }

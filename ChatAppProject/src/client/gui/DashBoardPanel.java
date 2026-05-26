@@ -26,6 +26,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 	private final JPanel chatContainer;
 	private final CardLayout chatLayout;
 	private final Map<Integer, ChatPanel> chatPanels; // conversationId
+	private AddGroupDialog addGroupDialog;
 	ServerHandler serverHandler;
 	public DashBoardPanel() {
 		this.setBounds(0, 0, 900, 700);
@@ -152,6 +153,10 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 
 	public ChatPanel getActiveChatPanel() {
 		return null;  // Không còn cần activeChatPanel
+	}
+
+	public AddGroupDialog getAddGroupDialog() {
+		return addGroupDialog;
 	}
 
 	public void openChat(SingleConversationInfo conversationInfo) {
@@ -289,6 +294,9 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		if (e.getSource() == addPeopleButton) {
 			showAddPeopleDialog();
 		}
+		if (e.getSource() == addGroupButton) {
+			showAddGroupDialog();
+		}
 	}
 
 	public void resetForSignOut() {
@@ -359,6 +367,13 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		dialog.setSize(320, 150);
 		dialog.setLocationRelativeTo(this);
 		dialog.setVisible(true);
+	}
+
+	private void showAddGroupDialog() {
+		if (addGroupDialog == null) {
+			addGroupDialog = new AddGroupDialog(this, serverHandler);
+		}
+		addGroupDialog.setVisible(true);
 	}
 
 }

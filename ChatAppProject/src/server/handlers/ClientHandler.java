@@ -116,6 +116,15 @@ public class ClientHandler implements Runnable {
           this.username = null;
           this.userId = 0;
         }
+        if (request.getType() == MessageType.CHECK_EXITS_USER_ID_REQUEST) {
+          AuthService authService = new AuthService();
+          MessageObject response = authService.checkExistsUserId(request);
+          out.writeObject(response);
+          out.flush();
+        }
+      
+      
+      
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

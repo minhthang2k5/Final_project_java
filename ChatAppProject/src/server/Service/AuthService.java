@@ -48,7 +48,18 @@ public class AuthService {
             return response;
         }
     }
-    
+    public MessageObject checkExistsUserId(MessageObject request) {
+        int userID = request.getUserId();
+        MessageObject response = new MessageObject(MessageType.CHECK_EXITS_USER_ID_RESPOND);
+        response.setUserId(userID);
+        if (userDao.checkExistsUserId(userID)) {
+            response.setSuccess(true);
+        }
+        else {
+            response.setSuccess(false);
+        }
+        return response;
+    }
 
 }
 

@@ -11,6 +11,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 
 import client.gui.ChatPanel;
+import client.gui.AddGroupDialog;
 import client.gui.DashBoardPanel;
 import client.gui.LoginPanel;
 import client.gui.MainFrame;
@@ -68,6 +69,13 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
 
   public void requestCreateConversation(String receiverID) throws NumberFormatException, IOException {
     authService.sendCreateConversationRequest(mainFrame.getCurrentUser().getUserId(), Integer.parseInt(receiverID));
+  }
+
+  public void requestCheckUserId(int userId) throws IOException {
+    MessageObject request = new MessageObject(MessageType.CHECK_EXITS_USER_ID_REQUEST);
+    request.setUserId(userId);
+    out.writeObject(request);
+    out.flush();
   }
 
   public void requestSignOut() throws IOException {
@@ -194,6 +202,14 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
           boolean isSelf = respond.getSenderId() == mainFrame.getCurrentUser().getUserId();
           String displayName = isSelf ? "You" : (conversationInfo != null ? conversationInfo.getDisplayName() : null);
           chatPanel.appendMessageBubble(respond.getMessageId(), displayName, respond.getChatMsg(), isSelf);
+        }
+      }
+
+      if (respond.getType() == MessageType.CHECK_EXITS_USER_ID_RESPOND) {
+        DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+        AddGroupDialog dialog = dashBoardPanel.getAddGroupDialog();
+        if (dialog != null) {
+          dialog.handleCheckUserIdResult(respond.getUserId(), respond.isSuccess());
         }
       }
     
