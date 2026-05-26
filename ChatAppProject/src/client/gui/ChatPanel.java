@@ -9,6 +9,7 @@ import javax.swing.text.StyledDocument;
 
 import client.ServerHandler;
 import client.gui.components.MessageBubble;
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 
 import java.awt.*;
@@ -19,8 +20,10 @@ import java.util.Map;
 public class ChatPanel extends JPanel  {
 	private static final int MAX_BUBBLE_TEXT_WIDTH = 320;
 
-	private SingleConversationInfo conversationInfo;
+	private SingleConversationInfo singleConversationInfo;
+	private GroupConversationInfo groupConversationInfo;
 	private final int conversationId;
+	private final boolean isGroupConversation;
 	private final ServerHandler serverHandler;
 	private final Map<Integer, MessageBubble> messageBubbles;
 	private final JLabel headerTitle;
@@ -39,7 +42,12 @@ public class ChatPanel extends JPanel  {
 	}
 
 	public ChatPanel(String title, int conversationId, ServerHandler serverHandler) {
+		this(title, conversationId, serverHandler, false);
+	}
+
+	public ChatPanel(String title, int conversationId, ServerHandler serverHandler, boolean isGroupConversation) {
 		this.conversationId = conversationId;
+		this.isGroupConversation = isGroupConversation;
 		this.serverHandler = serverHandler;
 		setLayout(new BorderLayout());
 		setBackground(new Color(248, 248, 248));
@@ -116,11 +124,25 @@ public class ChatPanel extends JPanel  {
 	}
 
 	public void setConversationInfo(SingleConversationInfo conversationInfo) {
-		this.conversationInfo = conversationInfo;
+		this.singleConversationInfo = conversationInfo;
+		this.groupConversationInfo = null;
 	}
 
-	public SingleConversationInfo getConversationInfo() {
-		return conversationInfo;
+	public void setConversationInfo(GroupConversationInfo conversationInfo) {
+		this.groupConversationInfo = conversationInfo;
+		this.singleConversationInfo = null;
+	}
+
+	public SingleConversationInfo getSingleConversationInfo() {
+		return singleConversationInfo;
+	}
+
+	public GroupConversationInfo getGroupConversationInfo() {
+		return groupConversationInfo;
+	}
+
+	public boolean isGroupConversation() {
+		return isGroupConversation;
 	}
 
 	public JTextPane getChatArea() {
@@ -198,7 +220,11 @@ public class ChatPanel extends JPanel  {
 			return;
 		}
 		try {
-			serverHandler.requestSendMessage(text.trim(), conversationId);
+			if (isGroupConversation) {
+				serverHandler.requestSendGroupMessage(text.trim(), conversationId);
+			} else {
+				serverHandler.requestSendMessage(text.trim(), conversationId);
+			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			return;

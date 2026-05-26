@@ -16,4 +16,22 @@ public class GroupConversationService {
     response.setListGroup(listGroupConversation);
     return response;
   }
+  public MessageObject handleCreateGroupConversation(MessageObject request) {
+    ArrayList<Integer> listUserID = request.getListUserID();
+    String nameGroup = request.getNameGroup();
+    int conversationId = chatDao.createGroupConversation(listUserID, nameGroup);
+    MessageObject response = new MessageObject(MessageType.CREATE_GROUP_CONVERSATION_RESPOND);
+    if (conversationId > 0) {
+      response.setSuccess(true);
+      response.setConversationId(conversationId);
+    }
+    else {
+      response.setSuccess(false);
+      response.setMessage("Fail from server");
+    }
+    return response;
+  }
+
+  
+
 }

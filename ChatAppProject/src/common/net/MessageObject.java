@@ -25,7 +25,8 @@ public class MessageObject implements Serializable {
   private ArrayList<SingleConversationInfo> listSingleUser;
   private ArrayList<GroupConversationInfo> listGroup;
   private int messageID;
-  
+  private ArrayList<Integer> listUserID;
+  private String nameGroup;
   
   public MessageObject(MessageType type) {
         this.type = type;
@@ -142,5 +143,18 @@ public class MessageObject implements Serializable {
     return messageID;
   }
 
+  public ArrayList<Integer> getListUserID() {
+    return listUserID;
+  }
 
+  public void setListUserID(ArrayList<Integer> listUserID) {
+    this.listUserID = listUserID;
+  }
+  
+  public void setNameGroup(String nameGroup) {
+    this.nameGroup = nameGroup;
+  }
+  public String getNameGroup() {
+    return this.nameGroup;
+  }
 } 

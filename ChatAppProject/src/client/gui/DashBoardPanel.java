@@ -79,6 +79,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		singleList.setCellRenderer(new UserListCellRenderer());
 		groupList.setCellRenderer(new UserListCellRenderer());
 		singleList.addListSelectionListener(this);
+		groupList.addListSelectionListener(this);
 		
 		JScrollPane singleScroll = new JScrollPane(singleList);
 		JScrollPane groupScroll = new JScrollPane(groupList);
@@ -165,14 +166,17 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		}
 		int conversationId = conversationInfo.getConversationId();
 		String conversationKey = String.valueOf(conversationId);
-		
-		// Kiểm tra xem đã mở chat này chưa
-		ChatPanel chatPanel = chatPanels.get(conversationId);
-		if (chatPanel == null) {
-			// Tạo ChatPanel mới nếu chưa có
-			chatPanel = createChatPanel(conversationInfo);
+		createChatPanel(conversationInfo);
+		chatLayout.show(chatContainer, conversationKey);
+	}
+
+	public void openChat(GroupConversationInfo conversationInfo) {
+		if (conversationInfo == null) {
+			return;
 		}
-		// Hiển thị ChatPanel
+		int conversationId = conversationInfo.getConversationId();
+		String conversationKey = String.valueOf(conversationId);
+		createChatPanel(conversationInfo);
 		chatLayout.show(chatContainer, conversationKey);
 	}
 
@@ -194,22 +198,34 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		if (conversationInfo == null) {
 			return null;
 		}
-		
+
 		int conversationId = conversationInfo.getConversationId();
-		String conversationKey = String.valueOf(conversationId);
-		
-		// Kiểm tra xem ChatPanel đã tồn tại chưa
-		ChatPanel chatPanel = chatPanels.get(conversationId);
-		if (chatPanel != null) {
-			return chatPanel;  // Đã tồn tại thì trả về luôn
+		ChatPanel existing = chatPanels.get(conversationId);
+		if (existing != null) {
+			return existing;
 		}
-		
-		// Tạo ChatPanel mới
-		chatPanel = new ChatPanel(conversationInfo.getDisplayName(), conversationId, serverHandler);
+		ChatPanel chatPanel = new ChatPanel(conversationInfo.getDisplayName(), conversationId, serverHandler, false);
 		chatPanel.setConversationInfo(conversationInfo);
+		String conversationKey = String.valueOf(conversationId);
 		chatPanels.put(conversationId, chatPanel);
 		chatContainer.add(chatPanel, conversationKey);
-		
+		return chatPanel;
+	}
+
+	public ChatPanel createChatPanel(GroupConversationInfo conversationInfo) {
+		if (conversationInfo == null) {
+			return null;
+		}
+		int conversationId = conversationInfo.getConversationId();
+		ChatPanel existing = chatPanels.get(conversationId);
+		if (existing != null) {
+			return existing;
+		}
+		ChatPanel chatPanel = new ChatPanel(conversationInfo.getGroupName(), conversationId, serverHandler, true);
+		chatPanel.setConversationInfo(conversationInfo);
+		String conversationKey = String.valueOf(conversationId);
+		chatPanels.put(conversationId, chatPanel);
+		chatContainer.add(chatPanel, conversationKey);
 		return chatPanel;
 	}
 
@@ -325,10 +341,20 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 				openChat(selected);
 			}
 		}
+		if (e.getSource() == groupList) {
+			GroupConversationInfo selected = groupList.getSelectedValue();
+			if (selected != null) {
+				openChat(selected);
+			}
+		}
 	}
 
 	private void showAddPeopleDialog() {
 		JDialog dialog = new JDialog((Frame) null, "Add People", true);
+		ImageIcon dialogIcon = loadIcon("/client/gui/asset/dialogue.png", 22);
+		if (dialogIcon != null) {
+			dialog.setIconImage(dialogIcon.getImage());
+		}
 		dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		dialog.setLayout(new BorderLayout(12, 12));
 		dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -370,9 +396,11 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 	}
 
 	private void showAddGroupDialog() {
-		if (addGroupDialog == null) {
+		if (addGroupDialog == null || !addGroupDialog.isDisplayable()) {
 			addGroupDialog = new AddGroupDialog(this, serverHandler);
 		}
+		int currentUserId = serverHandler == null ? 0 : serverHandler.getCurrentUserId();
+		addGroupDialog.prepareForNewGroup(currentUserId);
 		addGroupDialog.setVisible(true);
 	}
 

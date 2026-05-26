@@ -51,8 +51,8 @@ public class Client {
 
 
       //Wait console
-      BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
-      console.readLine();
+      // BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
+      // console.readLine();
 
     } catch (UnknownHostException e) {
       e.printStackTrace();

@@ -122,7 +122,30 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           out.flush();
         }
-      
+        if (request.getType() == MessageType.CREATE_GROUP_CONVERSATION_REQUEST) {
+          MessageObject response = groupConversationService.handleCreateGroupConversation(request);
+          out.writeObject(response);
+          out.flush();
+          if (response.isSuccess()) {
+            ChatDao chatDao = new ChatDao();
+            UserDao userDao = new UserDao();
+            String[] listUsername = chatDao.getListUserInGroupConversation(response.getConversationId());
+            if (listUsername != null) {
+              for (String name : listUsername) {
+                if (name == null || name.trim().isEmpty()) {
+                  continue;
+                }
+                ClientHandler handler = Server.onlineUsers.get(name);
+                if (handler != null) {
+                  int targetUserId = userDao.fetchUserID(name);
+                  if (targetUserId > 0) {
+                    handler.sendGroupConversationInfo(targetUserId);
+                  }
+                }
+              }
+            }
+          }
+        }
       
       
       }
@@ -163,4 +186,10 @@ public class ClientHandler implements Runnable {
     out.writeObject(response);
     out.flush();
   }  
+
+  public void sendGroupConversationInfo(int userId) throws IOException {
+    MessageObject response = groupConversationService.sendGroupConversationInfo(userId);
+    out.writeObject(response);
+    out.flush();
+  }
 }

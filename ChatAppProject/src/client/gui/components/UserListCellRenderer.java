@@ -30,6 +30,11 @@ public class UserListCellRenderer extends JPanel implements ListCellRenderer<Obj
     @Override
     public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
         RenderData data = buildRenderData(value, index);
+        if (value instanceof GroupConversationInfo) {
+            avatarLabel.setIcon(loadIcon("/client/gui/asset/group.png", 22));
+        } else {
+            avatarLabel.setIcon(loadIcon("/client/gui/asset/user.png", 22));
+        }
         nameLabel.setText(data.displayText);
         statusLabel.setIcon(data.statusColor == null ? null : new StatusIcon(data.statusColor));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 6));

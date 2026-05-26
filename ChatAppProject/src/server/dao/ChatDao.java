@@ -242,7 +242,83 @@ public class ChatDao {
     return -1;
   }
 
+  public int createGroupConversation(ArrayList<Integer> listUserID, String nameGroup) {
+    if (listUserID == null || listUserID.isEmpty()) {
+      return -1;
+    }
 
+    String insertConversationSql = "INSERT INTO conversations (name, type) VALUES (?, 'Group')";
+    String insertParticipantSql = "INSERT INTO participants (user_id, conversation_id) VALUES (?, ?)";
+
+    try (Connection con = DBConnection.getConnection()) {
+      con.setAutoCommit(false);
+      try {
+        int conversationId = -1;
+        try (PreparedStatement pStatement = con.prepareStatement(insertConversationSql,
+            PreparedStatement.RETURN_GENERATED_KEYS)) {
+          pStatement.setString(1, nameGroup);
+          pStatement.executeUpdate();
+          try (ResultSet keys = pStatement.getGeneratedKeys()) {
+            if (keys.next()) {
+              conversationId = keys.getInt(1);
+            }
+          }
+        }
+
+        if (conversationId <= 0) {
+          con.rollback();
+          return -1;
+        }
+
+        try (PreparedStatement pStatement = con.prepareStatement(insertParticipantSql)) {
+          for (Integer userId : listUserID) {
+            if (userId == null || userId <= 0) {
+              continue;
+            }
+            pStatement.setInt(1, userId);
+            pStatement.setInt(2, conversationId);
+            pStatement.addBatch();
+          }
+          pStatement.executeBatch();
+        }
+
+        con.commit();
+        return conversationId;
+      } catch (SQLException e) {
+        con.rollback();
+        throw e;
+      } finally {
+        con.setAutoCommit(true);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return -1;
+  }
   
+  public String[] getListUserInGroupConversation(int conversationID) {
+    String sql = """
+      SELECT u.username
+      FROM participants p
+      JOIN users u ON p.user_id = u.user_id
+      JOIN conversations c ON c.conversation_id = p.conversation_id
+      WHERE p.conversation_id = ?
+        AND c.type = 'Group'
+      """;
+    List<String> usernames = new ArrayList<>();
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, conversationID);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        while (rs.next()) {
+          usernames.add(rs.getString("username"));
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return usernames.toArray(new String[0]);
+  }
 
 }

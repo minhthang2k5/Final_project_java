@@ -10,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
 public class AddGroupDialog extends JDialog implements ActionListener {
@@ -168,8 +169,24 @@ public class AddGroupDialog extends JDialog implements ActionListener {
           JOptionPane.ERROR_MESSAGE);
       return;
     }
-    // TODO: Hook to server request when group create API is ready.
-    dispose();
+    if (serverHandler == null) {
+      setMemberStatus("Server handler not ready", true);
+      return;
+    }
+    ArrayList<Integer> listUserID = new ArrayList<>();
+    for (String member : members) {
+      try {
+        listUserID.add(Integer.parseInt(member));
+      } catch (NumberFormatException ex) {
+        // Skip invalid ids (should not happen due to validation)
+      }
+    }
+    try {
+      serverHandler.requestCreateGroupConversation(listUserID, groupName);
+      setMemberStatus("Creating group...", false);
+    } catch (java.io.IOException ex) {
+      setMemberStatus("Failed to create group", true);
+    }
   }
 
   private void refreshMembers() {
@@ -224,6 +241,18 @@ public class AddGroupDialog extends JDialog implements ActionListener {
     memberField.requestFocusInWindow();
     setMemberStatus("Member added", false);
     pendingMemberId = null;
+    refreshMembers();
+  }
+
+  public void prepareForNewGroup(int currentUserId) {
+    members.clear();
+    nameField.setText("");
+    memberField.setText("");
+    pendingMemberId = null;
+    setMemberStatus(" ", false);
+    if (currentUserId > 0) {
+      members.add(String.valueOf(currentUserId));
+    }
     refreshMembers();
   }
 }

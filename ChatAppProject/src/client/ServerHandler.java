@@ -38,6 +38,9 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
   public ObjectInputStream getInputStream() {
     return in;
   }
+  public int getCurrentUserId() {
+    return mainFrame.getCurrentUser().getUserId();
+  }
   public ServerHandler(ObjectInputStream in, ObjectOutputStream out, MainFrame mainFrame,
       ClientAuthService authService) throws IOException {
     this.out = out;
@@ -67,6 +70,15 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     out.flush();
   }
 
+  public void requestSendGroupMessage(String msg, int conversationId) throws IOException {
+    MessageObject request = new MessageObject(MessageType.SEND_GROUP_CHAT_MESSAGE_REQUEST);
+    request.setChatMsg(msg);
+    request.setSenderId(mainFrame.getCurrentUser().getUserId());
+    request.setConversationId(conversationId);
+    out.writeObject(request);
+    out.flush();
+  }
+
   public void requestCreateConversation(String receiverID) throws NumberFormatException, IOException {
     authService.sendCreateConversationRequest(mainFrame.getCurrentUser().getUserId(), Integer.parseInt(receiverID));
   }
@@ -74,6 +86,14 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
   public void requestCheckUserId(int userId) throws IOException {
     MessageObject request = new MessageObject(MessageType.CHECK_EXITS_USER_ID_REQUEST);
     request.setUserId(userId);
+    out.writeObject(request);
+    out.flush();
+  }
+
+  public void requestCreateGroupConversation(ArrayList<Integer> listUserID, String nameGroup) throws IOException {
+    MessageObject request = new MessageObject(MessageType.CREATE_GROUP_CONVERSATION_REQUEST);
+    request.setListUserID(listUserID);
+    request.setNameGroup(nameGroup);
     out.writeObject(request);
     out.flush();
   }
@@ -205,11 +225,46 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         }
       }
 
+      if (respond.getType() == MessageType.SEND_GROUP_CHAT_MESSAGE_RESPONSE) {
+        int conversationId = respond.getConversationId();
+        DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+        ChatPanel chatPanel = dashBoardPanel.getChatPanel(conversationId);
+        if (chatPanel != null) {
+          boolean isSelf = respond.getSenderId() == mainFrame.getCurrentUser().getUserId();
+          String displayName = isSelf ? "You" : respond.getDisplayName();
+          if (displayName == null || displayName.trim().isEmpty()) {
+            displayName = isSelf ? "You" : "Member";
+          }
+          chatPanel.appendMessageBubble(respond.getMessageId(), displayName, respond.getChatMsg(), isSelf);
+        }
+      }
+
       if (respond.getType() == MessageType.CHECK_EXITS_USER_ID_RESPOND) {
         DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
         AddGroupDialog dialog = dashBoardPanel.getAddGroupDialog();
         if (dialog != null) {
           dialog.handleCheckUserIdResult(respond.getUserId(), respond.isSuccess());
+        }
+      }
+
+      if (respond.getType() == MessageType.CREATE_GROUP_CONVERSATION_RESPOND) {
+        if (respond.isSuccess()) {
+          JOptionPane.showMessageDialog(mainFrame, "Create group successful", "Success",
+              JOptionPane.INFORMATION_MESSAGE);
+          try {
+            GetInformationService getInformationService = new GetInformationService(out);
+            getInformationService.sendGetInfoGroupConversation(mainFrame.getCurrentUser().getUserId());
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+          AddGroupDialog dialog = dashBoardPanel.getAddGroupDialog();
+          if (dialog != null) {
+            dialog.dispose();
+          }
+        } else {
+          String message = respond.getMessage() == null ? "Create group failed" : respond.getMessage();
+          JOptionPane.showMessageDialog(mainFrame, message, "Failed", JOptionPane.ERROR_MESSAGE);
         }
       }
     
