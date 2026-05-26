@@ -116,5 +116,22 @@ public class UserDao {
     return null;
   }
 
+  public String fetchDisplayName(int userId) {
+    String sql = "SELECT display_name FROM Users WHERE user_id = ?";
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, userId);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString(1);
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return null;
+  }
+
   
 }

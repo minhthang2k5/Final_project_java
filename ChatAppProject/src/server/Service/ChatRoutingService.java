@@ -50,6 +50,24 @@ public class ChatRoutingService {
     return response;
   }
 
+  public MessageObject handleReceiveGroupChatMessage(MessageObject request) {
+    int senderID = request.getSenderId();
+    int conversationID = request.getConversationId();
+    String chatMSG = request.getChatMsg();
+    int messageID = chatDao.writeMessage(senderID, conversationID, chatMSG);
+    MessageObject response = new MessageObject(MessageType.SEND_GROUP_CHAT_MESSAGE_RESPONSE);
+    response.setChatMsg(chatMSG);
+    response.setSenderId(senderID);
+    response.setConversationId(conversationID);
+    response.setMessageId(messageID);
+    String displayName = userDao.fetchDisplayName(senderID);
+    if (displayName == null || displayName.trim().isEmpty()) {
+      displayName = userDao.fetchUsername(senderID);
+    }
+    response.setDisplayName(displayName);
+    return response;
+  }
+
 
   
 }

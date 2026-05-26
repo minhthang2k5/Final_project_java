@@ -107,6 +107,26 @@ public class ClientHandler implements Runnable {
             }
           }
         }
+        if (request.getType() == MessageType.SEND_GROUP_CHAT_MESSAGE_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          MessageObject response = chatRoutingService.handleReceiveGroupChatMessage(request);
+          //Gửi cho chính mình
+          sendChatMessage(response);
+          //Gửi cho các thành viên trong group nếu online
+          ChatDao chatDao = new ChatDao();
+          String[] listUsername = chatDao.getListUserInGroupConversation(request.getConversationId());
+          if (listUsername != null) {
+            for (String name : listUsername) {
+              if (name == null || name.trim().isEmpty()) {
+                continue;
+              }
+              ClientHandler handler = Server.onlineUsers.get(name);
+              if (handler != null && handler != this) {
+                handler.sendChatMessage(response);
+              }
+            }
+          }
+        }
         if (request.getType() == MessageType.SIGNOUT_REQUEST) {
           if (this.username != null) {
             Server.onlineUsers.remove(this.username);
