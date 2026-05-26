@@ -3,6 +3,7 @@ package client.gui.components;
 import javax.swing.*;
 import java.awt.*;
 
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 
 public class UserListCellRenderer extends JPanel implements ListCellRenderer<Object> {
@@ -119,6 +120,11 @@ public class UserListCellRenderer extends JPanel implements ListCellRenderer<Obj
             String text = formatDisplayText(name + " #" + info.getUserId(), index);
             Color statusColor = info.isOnline() ? new Color(46, 200, 113) : new Color(190, 190, 190);
             return new RenderData(text, statusColor);
+        }
+        if (value instanceof GroupConversationInfo info) {
+            String name = info.getGroupName() == null ? "" : info.getGroupName();
+            String text = formatDisplayText(name + " #" + info.getConversationId(), index);
+            return new RenderData(text, null);
         }
         if (value == null) {
             return new RenderData("", null);

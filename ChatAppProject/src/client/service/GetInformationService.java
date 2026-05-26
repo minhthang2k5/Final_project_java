@@ -19,5 +19,12 @@ public class GetInformationService {
     out.flush();
   }
 
+  public void sendGetInfoGroupConversation(int userID) throws IOException {
+    MessageObject request = new MessageObject(MessageType.GET_LIST_GROUP_REQUEST);
+    request.setUserId(userID);
+    out.writeObject(request);
+    out.flush();
+  }
+
 
 }

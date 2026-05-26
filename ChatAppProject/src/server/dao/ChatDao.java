@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.models.DBConnection;
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 
 public class ChatDao {
@@ -183,6 +184,42 @@ public class ChatDao {
     return result;
   }
 
+  public ArrayList<GroupConversationInfo> getListGroupConversationByUserId(int userId) {
+    ArrayList<GroupConversationInfo> result = new ArrayList<>();
+    if (userId <= 0) {
+      return result;
+    }
+
+    String sql = """
+      SELECT c.conversation_id, c.name, COUNT(p_all.user_id) AS member_count
+      FROM conversations c
+      JOIN participants p_self ON p_self.conversation_id = c.conversation_id
+      JOIN participants p_all ON p_all.conversation_id = c.conversation_id
+      WHERE c.type = 'Group'
+        AND p_self.user_id = ?
+      GROUP BY c.conversation_id, c.name
+      ORDER BY c.conversation_id
+      """;
+
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, userId);
+      try (ResultSet rs = pStatement.executeQuery()) {
+        while (rs.next()) {
+          int conversationId = rs.getInt("conversation_id");
+          String groupName = rs.getString("name");
+          int memberCount = rs.getInt("member_count");
+          result.add(new GroupConversationInfo(conversationId, groupName, memberCount));
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    return result;
+  }
+
+  //Lấy tên user id của người còn lại trong cuộc trò truyên 1-1
   public int getTheOtherUserInSingleConversation(int conversationID, int userID) {
     String sql = """
       SELECT user_id 
@@ -205,5 +242,7 @@ public class ChatDao {
     return -1;
   }
 
+
+  
 
 }

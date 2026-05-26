@@ -15,4 +15,6 @@ public enum MessageType {
     //Information
     GET_LIST_SINGLE_USER_REQUEST,
     GET_LIST_SINGLE_USER_RESPOND,
+    GET_LIST_GROUP_REQUEST,
+    GET_LIST_GROUP_RESPOND,
 }

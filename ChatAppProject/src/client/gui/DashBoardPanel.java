@@ -4,6 +4,7 @@ import javax.swing.*;
 
 import client.ServerHandler;
 import client.gui.components.UserListCellRenderer;
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -16,7 +17,7 @@ import javax.swing.event.ListSelectionListener;
 
 public class DashBoardPanel extends JPanel implements ActionListener, ListSelectionListener {
 	private final JList<SingleConversationInfo> singleList;
-	private final JList<String> groupList;
+	private final JList<GroupConversationInfo> groupList;
 	private final JLabel userNameLabel;
 	private final JLabel userIdLabel;
 	private final JButton signOutButton;
@@ -67,7 +68,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		leftPanel.add(leftHeader, BorderLayout.NORTH);
 
 		DefaultListModel<SingleConversationInfo> singleModel = new DefaultListModel<>();
-		DefaultListModel<String> groupModel = new DefaultListModel<>();
+		DefaultListModel<GroupConversationInfo> groupModel = new DefaultListModel<>();
 		singleList = new JList<>(singleModel);
 		groupList = new JList<>(groupModel);
 		singleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -78,9 +79,6 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		groupList.setCellRenderer(new UserListCellRenderer());
 		singleList.addListSelectionListener(this);
 		
-		groupModel.addElement("Java class group");
-		groupModel.addElement("Database study");
-
 		JScrollPane singleScroll = new JScrollPane(singleList);
 		JScrollPane groupScroll = new JScrollPane(groupList);
 		singleScroll.setBorder(BorderFactory.createEmptyBorder());
@@ -120,7 +118,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		return singleList;
 	}
 
-	public JList<String> getGroupList() {
+	public JList<GroupConversationInfo> getGroupList() {
 		return groupList;
 	}
 
@@ -267,6 +265,10 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
     return (DefaultListModel<SingleConversationInfo>) singleList.getModel();
 	}
 
+	public DefaultListModel<GroupConversationInfo> getGroupListModel() {
+		return (DefaultListModel<GroupConversationInfo>) groupList.getModel();
+	}
+
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == signOutButton) {
@@ -294,6 +296,8 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		setUserIdText("");
 		DefaultListModel<SingleConversationInfo> model = getSingleListModel();
 		model.clear();
+		DefaultListModel<GroupConversationInfo> groupModel = getGroupListModel();
+		groupModel.clear();
 		chatPanels.clear();
 		chatContainer.removeAll();
 		chatContainer.add(buildEmptyChatState(), "empty");

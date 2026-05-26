@@ -3,6 +3,7 @@ package common.net;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 
 public class MessageObject implements Serializable {
@@ -22,6 +23,7 @@ public class MessageObject implements Serializable {
   private int conversationId;
   private String chatMsg;
   private ArrayList<SingleConversationInfo> listSingleUser;
+  private ArrayList<GroupConversationInfo> listGroup;
   private int messageID;
   
   
@@ -121,6 +123,14 @@ public class MessageObject implements Serializable {
   }
   public ArrayList<SingleConversationInfo> getListSingleUser() {
     return this.listSingleUser;
+  }
+
+  public void setListGroup(ArrayList<GroupConversationInfo> listGroup) {
+    this.listGroup = listGroup;
+  }
+
+  public ArrayList<GroupConversationInfo> getListGroup() {
+    return this.listGroup;
   }
 
 

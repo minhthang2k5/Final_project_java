@@ -7,6 +7,7 @@ import common.net.MessageType;
 import server.Server;
 import server.Service.AuthService;
 import server.Service.ChatRoutingService;
+import server.Service.GroupConversationService;
 import server.Service.SingleConversationService;
 import server.dao.ChatDao;
 import server.dao.UserDao;
@@ -19,7 +20,8 @@ public class ClientHandler implements Runnable {
   private ObjectOutputStream out;
   private String username;
   private int userId;
-  private  SingleConversationService singleConversationService = new SingleConversationService();
+  private SingleConversationService singleConversationService = new SingleConversationService();
+  private GroupConversationService groupConversationService = new GroupConversationService();
   public ClientHandler(Socket socket) {
     this.socket = socket;
   }
@@ -81,6 +83,11 @@ public class ClientHandler implements Runnable {
           SingleConversationService singleConversationService = new SingleConversationService();
           System.out.println(request.getUserId());
           MessageObject response = singleConversationService.sendSingleConversationInfo(request.getUserId());
+          out.writeObject(response);
+          out.flush();
+        }
+        if (request.getType() == MessageType.GET_LIST_GROUP_REQUEST) {
+          MessageObject response = groupConversationService.sendGroupConversationInfo(request.getUserId());
           out.writeObject(response);
           out.flush();
         }

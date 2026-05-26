@@ -17,6 +17,7 @@ import client.gui.MainFrame;
 import client.gui.RegisterPanel;
 import client.service.ClientAuthService;
 import client.service.GetInformationService;
+import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 import common.net.MessageObject;
 import common.net.MessageType;
@@ -111,6 +112,7 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
           try {
             GetInformationService getInformationService = new GetInformationService(out);
             getInformationService.sendGetInfoSingleConversation(mainFrame.getCurrentUser().getUserId());
+            getInformationService.sendGetInfoGroupConversation(mainFrame.getCurrentUser().getUserId());
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -147,6 +149,17 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         for (SingleConversationInfo info : list) {
             model.addElement(info);
             //pendingDashBoardPanel.createChatPanel(info);
+        }
+      }
+      if (respond.getType() == MessageType.GET_LIST_GROUP_RESPOND) {
+        ArrayList<GroupConversationInfo> list = respond.getListGroup();
+        DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+        DefaultListModel<GroupConversationInfo> model = dashBoardPanel.getGroupListModel();
+        model.clear();
+        if (list != null) {
+          for (GroupConversationInfo info : list) {
+            model.addElement(info);
+          }
         }
       }
       if (respond.getType() == MessageType.CREATE_SINGLE_CONVERSATION_RESPONSE) {
