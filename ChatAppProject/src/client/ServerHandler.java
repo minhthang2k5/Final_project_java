@@ -19,6 +19,7 @@ import client.gui.RegisterPanel;
 import client.service.ClientAuthService;
 import client.service.GetInformationService;
 import common.models.GroupConversationInfo;
+import common.models.MessageChat;
 import common.models.SingleConversationInfo;
 import common.net.MessageObject;
 import common.net.MessageType;
@@ -74,6 +75,13 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     MessageObject request = new MessageObject(MessageType.SEND_GROUP_CHAT_MESSAGE_REQUEST);
     request.setChatMsg(msg);
     request.setSenderId(mainFrame.getCurrentUser().getUserId());
+    request.setConversationId(conversationId);
+    out.writeObject(request);
+    out.flush();
+  }
+
+  public void requestGetHistoryChat(int conversationId) throws IOException {
+    MessageObject request = new MessageObject(MessageType.GET_HISTORY_CHAT_REQUEST);
     request.setConversationId(conversationId);
     out.writeObject(request);
     out.flush();
@@ -265,6 +273,58 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         } else {
           String message = respond.getMessage() == null ? "Create group failed" : respond.getMessage();
           JOptionPane.showMessageDialog(mainFrame, message, "Failed", JOptionPane.ERROR_MESSAGE);
+        }
+      }
+
+      if (respond.getType() == MessageType.GET_HISTORY_CHAT_RESPONSE) {
+        int conversationId = respond.getConversationId();
+        DashBoardPanel dashBoardPanel = mainFrame.getDashBoardPanel();
+        ChatPanel chatPanel = dashBoardPanel.getChatPanel(conversationId);
+        ArrayList<MessageChat> list = respond.getListMessage();
+        if (chatPanel != null && list != null) {
+          boolean isGroup = chatPanel.isGroupConversation();
+          SingleConversationInfo conversationInfo = null;
+          if (!isGroup) {
+            DefaultListModel<SingleConversationInfo> model = dashBoardPanel.getSingleListModel();
+            for (int i = 0; i < model.size(); i++) {
+              SingleConversationInfo info = model.get(i);
+              if (info.getConversationId() == conversationId) {
+                conversationInfo = info;
+                break;
+              }
+            }
+          }
+
+          for (MessageChat message : list) {
+            if (message == null) {
+              continue;
+            }
+            boolean isSelf = message.getSenderID() == mainFrame.getCurrentUser().getUserId();
+            String displayName = null;
+            if (isSelf) {
+              displayName = "You";
+            } else if (!isGroup && conversationInfo != null) {
+              displayName = conversationInfo.getDisplayName();
+            } else if (isGroup) {
+              displayName = message.getSenderDisplayName();
+              if (displayName == null || displayName.trim().isEmpty()) {
+                displayName = "Member";
+              }
+            } else {
+              displayName = message.getSenderDisplayName();
+            }
+
+            String text = message.getContent();
+            if (text == null || text.trim().isEmpty()) {
+              String filePath = message.getFilePath();
+              if (filePath != null && !filePath.trim().isEmpty()) {
+                text = "File: " + filePath;
+              }
+            }
+            if (text != null && !text.trim().isEmpty()) {
+              chatPanel.appendMessageBubble(message.getMessageID(), displayName, text, isSelf);
+            }
+          }
         }
       }
     

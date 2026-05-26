@@ -166,7 +166,17 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		}
 		int conversationId = conversationInfo.getConversationId();
 		String conversationKey = String.valueOf(conversationId);
-		createChatPanel(conversationInfo);
+		ChatPanel chatPanel = chatPanels.get(conversationId);
+		if (chatPanel == null) {
+			chatPanel = createChatPanel(conversationInfo);
+			if (serverHandler != null) {
+				try {
+					serverHandler.requestGetHistoryChat(conversationId);
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
 		chatLayout.show(chatContainer, conversationKey);
 	}
 
@@ -176,7 +186,17 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		}
 		int conversationId = conversationInfo.getConversationId();
 		String conversationKey = String.valueOf(conversationId);
-		createChatPanel(conversationInfo);
+		ChatPanel chatPanel = chatPanels.get(conversationId);
+		if (chatPanel == null) {
+			chatPanel = createChatPanel(conversationInfo);
+			if (serverHandler != null) {
+				try {
+					serverHandler.requestGetHistoryChat(conversationId);
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
 		chatLayout.show(chatContainer, conversationKey);
 	}
 

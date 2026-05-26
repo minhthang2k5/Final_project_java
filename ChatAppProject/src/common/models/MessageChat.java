@@ -1,11 +1,14 @@
 package common.models;
 
-public class MessageChat {
+import java.io.Serializable;
+
+public class MessageChat implements Serializable {
   private int messageID;
   private int senderID;
   private String type;
   private String content;
   private String filePath;
+  private String senderDisplayName;
 
   public MessageChat(int messageID, int senderID, String content) {
     this.messageID = messageID;
@@ -61,6 +64,14 @@ public class MessageChat {
 
   public void setFilePath(String filePath) {
     this.filePath = filePath;
+  }
+
+  public String getSenderDisplayName() {
+    return senderDisplayName;
+  }
+
+  public void setSenderDisplayName(String senderDisplayName) {
+    this.senderDisplayName = senderDisplayName;
   }
   
 }

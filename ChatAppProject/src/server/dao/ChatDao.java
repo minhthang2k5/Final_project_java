@@ -329,10 +329,12 @@ public class ChatDao {
     }
 
     String sql = """
-      SELECT message_id, sender_id, type, content_text, file_path
-      FROM messages
-      WHERE conversation_id = ?
-      ORDER BY message_id
+      SELECT m.message_id, m.sender_id, m.type, m.content_text, m.file_path,
+             u.display_name, u.username
+      FROM messages m
+      JOIN users u ON u.user_id = m.sender_id
+      WHERE m.conversation_id = ?
+      ORDER BY m.message_id
       """;
 
     try (Connection con = DBConnection.getConnection();
@@ -345,6 +347,10 @@ public class ChatDao {
           String type = rs.getString("type");
           String content = rs.getString("content_text");
           String filePath = rs.getString("file_path");
+          String displayName = rs.getString("display_name");
+          if (displayName == null || displayName.trim().isEmpty()) {
+            displayName = rs.getString("username");
+          }
           boolean isText = type == null || type.equalsIgnoreCase("text");
           MessageChat message = isText
               ? new MessageChat(messageId, senderId, content)
@@ -352,6 +358,7 @@ public class ChatDao {
           if (!isText) {
             message.setType("file");
           }
+          message.setSenderDisplayName(displayName);
           result.add(message);
         }
       }
