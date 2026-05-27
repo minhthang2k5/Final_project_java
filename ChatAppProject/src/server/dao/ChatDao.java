@@ -329,7 +329,7 @@ public class ChatDao {
     }
 
     String sql = """
-      SELECT m.message_id, m.sender_id, m.type, m.content_text, m.file_path,
+      SELECT m.message_id, m.sender_id, m.type, m.content_text, m.file_name,
              u.display_name, u.username
       FROM messages m
       JOIN users u ON u.user_id = m.sender_id
@@ -346,7 +346,7 @@ public class ChatDao {
           int senderId = rs.getInt("sender_id");
           String type = rs.getString("type");
           String content = rs.getString("content_text");
-          String filePath = rs.getString("file_path");
+          String filePath = rs.getString("file_name");
           String displayName = rs.getString("display_name");
           if (displayName == null || displayName.trim().isEmpty()) {
             displayName = rs.getString("username");

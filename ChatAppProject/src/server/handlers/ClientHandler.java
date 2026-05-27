@@ -7,6 +7,7 @@ import common.net.MessageType;
 import server.Server;
 import server.Service.AuthService;
 import server.Service.ChatRoutingService;
+import server.Service.FileService;
 import server.Service.GroupConversationService;
 import server.Service.SingleConversationService;
 import server.dao.ChatDao;
@@ -22,6 +23,8 @@ public class ClientHandler implements Runnable {
   private int userId;
   private SingleConversationService singleConversationService = new SingleConversationService();
   private GroupConversationService groupConversationService = new GroupConversationService();
+  // Map lưu trữ các FileOutputStream đang mở, key = messageId
+  private final java.util.Map<Integer, FileOutputStream> fileStreams = new java.util.HashMap<>();
   public ClientHandler(Socket socket) {
     this.socket = socket;
   }
@@ -172,6 +175,57 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           out.flush();
         }
+        if (request.getType() == MessageType.UPLOAD_FILE_START_REQUEST) {
+          FileService fileService = new FileService();
+          MessageObject response = fileService.handleUploadFileStart(request);
+          out.writeObject(response);
+          out.flush();
+        }
+        if (request.getType() == MessageType.UPLOAD_FILE_CHUNK) {
+          int messageId = request.getMessageId();
+          String nameFile = request.getNameFile();   // Ví dụ: "123_baocao.pdf"
+          byte[] data    = request.getFileData();
+          boolean isLast = request.isLast();
+
+          // Mở FileOutputStream lần đầu nếu chưa có (chế độ append)
+          FileOutputStream fos = fileStreams.get(messageId);
+          if (fos == null) {
+            File dir = new File("server" + File.separator + "data");
+            if (!dir.exists()) dir.mkdirs();
+            File saveFile = new File(dir, nameFile);
+            fos = new FileOutputStream(saveFile, true); // append = true
+            fileStreams.put(messageId, fos);
+          }
+
+          // Ghi dữ liệu chunk vào file
+          if (data != null && data.length > 0) {
+            fos.write(data);
+            fos.flush();
+          }
+
+          // Chunk cuối: đóng stream và broadcast thông báo hoàn tất
+          if (isLast) {
+            fos.close();
+            fileStreams.remove(messageId);
+
+            // Tạo response hoàn tất
+            FileService fileService = new FileService();
+            MessageObject broadcast = fileService.buildCompleteResponse(request);
+
+            // Gửi cho tất cả thành viên online trong cuộc trò chuyện
+            ChatDao chatDao = new ChatDao();
+            String[] participants = chatDao.getUsernameInConversation(request.getConversationId());
+            if (participants != null) {
+              for (String name : participants) {
+                if (name == null || name.trim().isEmpty()) continue;
+                ClientHandler handler = Server.onlineUsers.get(name);
+                if (handler != null) {
+                  handler.sendChatMessage(broadcast);
+                }
+              }
+            }
+          }
+        }
       
       
       }
@@ -189,6 +243,11 @@ public class ClientHandler implements Runnable {
             System.out.println(username + " offline");
             singleConversationService.sendStatusOnline(userId);
       }
+      // Đóng tất cả FileOutputStream còn đang mở nếu client disconnect giữa chừng
+      for (FileOutputStream fos : fileStreams.values()) {
+        try { fos.close(); } catch (IOException e) {}
+      }
+      fileStreams.clear();
       try {
         if (in != null) in.close();
       } catch (IOException e) {}

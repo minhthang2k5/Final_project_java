@@ -29,6 +29,13 @@ public class MessageObject implements Serializable {
   private ArrayList<Integer> listUserID;
   private String nameGroup;
   private ArrayList<MessageChat> listMessage;
+
+  //File
+  private String nameFile;
+  private int totalSize;
+  private byte[] fileData;      
+  private boolean isLast;
+ 
   
   public MessageObject(MessageType type) {
         this.type = type;
@@ -166,5 +173,34 @@ public class MessageObject implements Serializable {
   }
   public ArrayList<MessageChat> getListMessage() {
     return this.listMessage;
+  }
+
+  // File transfer fields
+  public String getNameFile() {
+    return nameFile;
+  }
+  public void setNameFile(String nameFile) {
+    this.nameFile = nameFile;
+  }
+
+  public int getTotalSize() {
+    return totalSize;
+  }
+  public void setTotalSize(int totalSize) {
+    this.totalSize = totalSize;
+  }
+
+  public byte[] getFileData() {
+    return fileData;
+  }
+  public void setFileData(byte[] fileData) {
+    this.fileData = fileData;
+  }
+
+  public boolean isLast() {
+    return isLast;
+  }
+  public void setLast(boolean isLast) {
+    this.isLast = isLast;
   }
 } 
