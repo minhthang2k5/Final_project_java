@@ -11,6 +11,10 @@ public class MessageBubble extends JPanel {
 		void onDownload(int messageId, String fileName);
 	}
 
+	public interface DeleteListener {
+		void onDeleteRequested(int messageId);
+	}
+
 	private final int messageId;
 	private final String displayName;
 	private final String text;
@@ -18,6 +22,7 @@ public class MessageBubble extends JPanel {
 	private final boolean isFile;
 	private final String fileName;
 	private DownloadListener downloadListener;
+	private DeleteListener deleteListener;
 
 	/** Constructor cho tin nhắn văn bản thông thường. */
 	public MessageBubble(int messageId, String displayName, String text, boolean isSelf, int maxTextWidth) {
@@ -28,6 +33,7 @@ public class MessageBubble extends JPanel {
 		this.isFile = false;
 		this.fileName = null;
 		buildTextUi(maxTextWidth);
+		setupClickSupport();
 	}
 
 	/** Constructor cho tin nhắn file (icon file + tên file + nút Download). */
@@ -39,6 +45,7 @@ public class MessageBubble extends JPanel {
 		this.isFile = true;
 		this.fileName = fileName;
 		buildFileUi();
+		setupClickSupport();
 	}
 
 	public int getMessageId() {
@@ -68,6 +75,34 @@ public class MessageBubble extends JPanel {
 	/** Đặt listener để xử lý sự kiện Download từ bên ngoài (ChatPanel). */
 	public void setDownloadListener(DownloadListener listener) {
 		this.downloadListener = listener;
+	}
+
+	public void setDeleteListener(DeleteListener listener) {
+		this.deleteListener = listener;
+	}
+
+	private void setupClickSupport() {
+		java.awt.event.MouseAdapter clickAdapter = new java.awt.event.MouseAdapter() {
+			@Override
+			public void mouseClicked(java.awt.event.MouseEvent e) {
+				if (deleteListener != null) {
+					deleteListener.onDeleteRequested(messageId);
+				}
+			}
+		};
+		addMouseListenerRecursively(this, clickAdapter);
+	}
+
+	private void addMouseListenerRecursively(Component comp, java.awt.event.MouseAdapter adapter) {
+		// Bỏ qua nút Download để không bị trùng sự kiện click
+		if (comp instanceof JButton) return; 
+		comp.addMouseListener(adapter);
+		comp.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		if (comp instanceof Container) {
+			for (Component child : ((Container) comp).getComponents()) {
+				addMouseListenerRecursively(child, adapter);
+			}
+		}
 	}
 
 	// -------------------------------------------------------------------------

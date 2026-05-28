@@ -333,7 +333,7 @@ public class ChatDao {
              u.display_name, u.username
       FROM messages m
       JOIN users u ON u.user_id = m.sender_id
-      WHERE m.conversation_id = ?
+      WHERE m.conversation_id = ? AND m.is_deleted = 0
       ORDER BY m.message_id
       """;
 
@@ -367,5 +367,17 @@ public class ChatDao {
     }
 
     return result;
+  }
+
+  public boolean deleteMessage(int messageId) {
+    String sql = "UPDATE messages SET is_deleted = 1 WHERE message_id = ?";
+    try (Connection con = DBConnection.getConnection();
+        PreparedStatement pStatement = con.prepareStatement(sql)) {
+      pStatement.setInt(1, messageId);
+      return pStatement.executeUpdate() > 0;
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return false;
   }
 }

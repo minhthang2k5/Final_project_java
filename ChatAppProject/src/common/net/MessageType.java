@@ -42,4 +42,8 @@ public enum MessageType {
     DOWNLOAD_FILE_REQUEST,
     DOWNLOAD_FILE_CHUNK,
     DOWNLOAD_FILE_COMPLETE,
+
+    //Delete message
+    DELETE_MESSAGE_REQUEST,
+    DELETE_MESSAGE_RESPONSE,
 }

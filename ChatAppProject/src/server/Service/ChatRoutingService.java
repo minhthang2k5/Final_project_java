@@ -76,5 +76,14 @@ public class ChatRoutingService {
     return response;
   }
 
-  
+  public MessageObject handleDeleteMessage(MessageObject request) {
+    int messageId = request.getMessageId();
+    boolean success = chatDao.deleteMessage(messageId);
+    MessageObject response = new MessageObject(MessageType.DELETE_MESSAGE_RESPONSE);
+    response.setSuccess(success);
+    if (!success) {
+      response.setMessage("Failed to delete message from database");
+    }
+    return response;
+  }
 }

@@ -320,6 +320,31 @@ public class ClientHandler implements Runnable {
           }
         }
 
+        if (request.getType() == MessageType.DELETE_MESSAGE_REQUEST) {
+          ChatRoutingService chatRoutingService = new ChatRoutingService();
+          MessageObject response = chatRoutingService.handleDeleteMessage(request);
+          sendChatMessage(response);
+
+          if (response.isSuccess()) {
+            MessageObject historyRequest = new MessageObject(MessageType.GET_HISTORY_CHAT_REQUEST);
+            historyRequest.setConversationId(request.getConversationId());
+            MessageObject historyResponse = chatRoutingService.handleGetHistoryChat(historyRequest);
+
+            ChatDao chatDao = new ChatDao();
+            String[] participants = chatDao.getUsernameInConversation(request.getConversationId());
+            if (participants != null) {
+              for (String name : participants) {
+                if (name == null || name.trim().isEmpty())
+                  continue;
+                ClientHandler handler = Server.onlineUsers.get(name);
+                if (handler != null) {
+                  handler.sendChatMessage(historyResponse);
+                }
+              }
+            }
+          }
+        }
+
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

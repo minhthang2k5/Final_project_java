@@ -281,6 +281,13 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     writeMessage(request);
   }
 
+  public void requestDeleteMessage(int messageId, int conversationId) throws IOException {
+    MessageObject request = new MessageObject(MessageType.DELETE_MESSAGE_REQUEST);
+    request.setMessageId(messageId);
+    request.setConversationId(conversationId);
+    writeMessage(request);
+  }
+
   private boolean hasActiveUpload(int conversationId) {
     for (UploadTask task : activeUploads.values()) {
       if (task.conversationId == conversationId) {
@@ -635,6 +642,16 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
           if (!respond.isSuccess()) {
             task.notifyError(respond.getMessage() == null ? "Download failed" : respond.getMessage());
           }
+        }
+      }
+
+      if (respond.getType() == MessageType.DELETE_MESSAGE_RESPONSE) {
+        if (!respond.isSuccess()) {
+          String msg = respond.getMessage();
+          JOptionPane.showMessageDialog(mainFrame, 
+              msg != null ? msg : "Failed to delete message", 
+              "Delete Message", 
+              JOptionPane.ERROR_MESSAGE);
         }
       }
 

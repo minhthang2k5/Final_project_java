@@ -184,6 +184,20 @@ public class ChatPanel extends JPanel {
 		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
 		chatArea.setCaretPosition(insertPos);
 		MessageBubble bubble = new MessageBubble(messageId, displayName, text.trim(), isSelf, MAX_BUBBLE_TEXT_WIDTH);
+		bubble.setDeleteListener(msgId -> {
+			if (serverHandler == null || msgId < 0 || conversationId <= 0) return;
+			int choice = JOptionPane.showConfirmDialog(ChatPanel.this, 
+					"Do you want to delete this message?", 
+					"Delete Message", 
+					JOptionPane.YES_NO_OPTION);
+			if (choice == JOptionPane.YES_OPTION) {
+				try {
+					serverHandler.requestDeleteMessage(msgId, conversationId);
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+			}
+		});
 		if (messageId >= 0) {
 			messageBubbles.put(messageId, bubble);
 		}
@@ -261,6 +275,20 @@ public class ChatPanel extends JPanel {
 			} catch (IOException ex) {
 				progressDialog.closeDialog();
 				JOptionPane.showMessageDialog(this, "Download failed", "Download", JOptionPane.ERROR_MESSAGE);
+			}
+		});
+		bubble.setDeleteListener(msgId -> {
+			if (serverHandler == null || msgId < 0 || conversationId <= 0) return;
+			int choice = JOptionPane.showConfirmDialog(ChatPanel.this, 
+					"Do you want to delete this message?", 
+					"Delete Message", 
+					JOptionPane.YES_NO_OPTION);
+			if (choice == JOptionPane.YES_OPTION) {
+				try {
+					serverHandler.requestDeleteMessage(msgId, conversationId);
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 		if (messageId >= 0) {
