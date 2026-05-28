@@ -247,6 +247,25 @@ public class ClientHandler implements Runnable {
                 }
               }
             }
+
+            // Sau khi upload thành công, gửi GET_HISTORY_CHAT_RESPONSE cho tất cả bên liên quan
+            // để các client tự cập nhật lại lịch sử chat (giống pattern SEND_SINGLE/GROUP_CHAT)
+            ChatRoutingService chatRoutingService = new ChatRoutingService();
+            MessageObject historyRequest = new MessageObject(MessageType.GET_HISTORY_CHAT_REQUEST);
+            historyRequest.setConversationId(request.getConversationId());
+            MessageObject historyResponse = chatRoutingService.handleGetHistoryChat(historyRequest);
+            System.out.println("[ClientHandler] Sending GET_HISTORY_CHAT_RESPONSE for conversationId=" + request.getConversationId());
+            if (participants != null) {
+              for (String name : participants) {
+                if (name == null || name.trim().isEmpty())
+                  continue;
+                ClientHandler handler = Server.onlineUsers.get(name);
+                if (handler != null) {
+                  handler.sendChatMessage(historyResponse);
+                  System.out.println("[ClientHandler] Sent history to: " + name);
+                }
+              }
+            }
           }
         }
 

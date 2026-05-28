@@ -200,11 +200,6 @@ public class ChatPanel extends JPanel {
 	/**
 	 * Thêm bubble tin nhắn file vào chat:
 	 * hiển thị icon file, tên file (bỏ prefix messageId_) và nút Download.
-	 *
-	 * @param messageId   ID tin nhắn (dùng khi download)
-	 * @param displayName Tên người gửi
-	 * @param fileName    Tên file trên server (có thể có dạng "42_tenfile.pdf")
-	 * @param isSelf      true nếu là tin nhắn của chính mình
 	 */
 	public void appendFileBubble(int messageId, String displayName, String fileName, boolean isSelf) {
 		if (fileName == null || fileName.trim().isEmpty()) {
@@ -218,8 +213,6 @@ public class ChatPanel extends JPanel {
 		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
 		chatArea.setCaretPosition(insertPos);
 		MessageBubble bubble = new MessageBubble(messageId, displayName, fileName.trim(), isSelf);
-		// TODO: gắn DownloadListener để xử lý logic tải file
-		// bubble.setDownloadListener((msgId, name) -> serverHandler.requestDownloadFile(msgId, name));
 		if (messageId >= 0) {
 			messageBubbles.put(messageId, bubble);
 		}
@@ -233,6 +226,11 @@ public class ChatPanel extends JPanel {
 		chatArea.setCaretPosition(document.getLength());
 	}
 
+	/** Xóa sạch toàn bộ nội dung chat area để chuẩn bị render lại lịch sử. */
+	public void clearChatArea() {
+		chatArea.setText("");
+		messageBubbles.clear();
+	}
 
 	public JTextField getChatInput() {
 		return chatInput;

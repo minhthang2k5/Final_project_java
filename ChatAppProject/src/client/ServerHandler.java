@@ -43,7 +43,9 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
 
   public interface UploadListener {
     void onProgress(int percent);
+
     void onCompleted();
+
     void onError(String message);
   }
 
@@ -475,6 +477,9 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
             }
           }
 
+          // Xóa sạch chat area trước khi render lại để tránh duplicate
+          chatPanel.clearChatArea();
+
           for (MessageChat message : list) {
             if (message == null) {
               continue;
@@ -496,7 +501,6 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
 
             String msgType = message.getType(); // "text" hoặc "file"
             if ("file".equals(msgType)) {
-              // Lấy tên file từ filePath (server lưu dưới dạng "messageId_tenfile")
               String filePath = message.getFilePath();
               if (filePath != null && !filePath.trim().isEmpty()) {
                 chatPanel.appendFileBubble(message.getMessageID(), displayName, filePath, isSelf);
