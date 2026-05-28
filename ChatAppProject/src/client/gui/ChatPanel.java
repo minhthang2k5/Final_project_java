@@ -13,11 +13,12 @@ import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ChatPanel extends JPanel  {
+public class ChatPanel extends JPanel {
 	private static final int MAX_BUBBLE_TEXT_WIDTH = 320;
 
 	private SingleConversationInfo singleConversationInfo;
@@ -105,6 +106,7 @@ public class ChatPanel extends JPanel  {
 		sendButton.setPreferredSize(new Dimension(90, 36));
 		sendButton.addActionListener(event -> sendCurrentMessage());
 		chatInput.addActionListener(event -> sendCurrentMessage());
+		fileButton.addActionListener(event -> handleFileUpload());
 		inputPanel.add(chatInput, BorderLayout.CENTER);
 		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
 		actionPanel.setOpaque(false);
@@ -195,6 +197,43 @@ public class ChatPanel extends JPanel  {
 		chatArea.setCaretPosition(document.getLength());
 	}
 
+	/**
+	 * Thêm bubble tin nhắn file vào chat:
+	 * hiển thị icon file, tên file (bỏ prefix messageId_) và nút Download.
+	 *
+	 * @param messageId   ID tin nhắn (dùng khi download)
+	 * @param displayName Tên người gửi
+	 * @param fileName    Tên file trên server (có thể có dạng "42_tenfile.pdf")
+	 * @param isSelf      true nếu là tin nhắn của chính mình
+	 */
+	public void appendFileBubble(int messageId, String displayName, String fileName, boolean isSelf) {
+		if (fileName == null || fileName.trim().isEmpty()) {
+			return;
+		}
+		StyledDocument document = chatArea.getStyledDocument();
+		int insertPos = document.getLength();
+		SimpleAttributeSet paragraphStyle = new SimpleAttributeSet();
+		StyleConstants.setAlignment(paragraphStyle, isSelf ? StyleConstants.ALIGN_RIGHT : StyleConstants.ALIGN_LEFT);
+		StyleConstants.setSpaceAbove(paragraphStyle, 6f);
+		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
+		chatArea.setCaretPosition(insertPos);
+		MessageBubble bubble = new MessageBubble(messageId, displayName, fileName.trim(), isSelf);
+		// TODO: gắn DownloadListener để xử lý logic tải file
+		// bubble.setDownloadListener((msgId, name) -> serverHandler.requestDownloadFile(msgId, name));
+		if (messageId >= 0) {
+			messageBubbles.put(messageId, bubble);
+		}
+		chatArea.insertComponent(bubble);
+		document.setParagraphAttributes(insertPos, 1, paragraphStyle, false);
+		try {
+			document.insertString(document.getLength(), "\n", null);
+		} catch (BadLocationException ex) {
+			return;
+		}
+		chatArea.setCaretPosition(document.getLength());
+	}
+
+
 	public JTextField getChatInput() {
 		return chatInput;
 	}
@@ -234,6 +273,55 @@ public class ChatPanel extends JPanel  {
 		chatInput.requestFocusInWindow();
 	}
 
+	private void handleFileUpload() {
+		if (serverHandler == null || conversationId <= 0) {
+			return;
+		}
+		JFileChooser chooser = new JFileChooser();
+		int result = chooser.showOpenDialog(this);
+		if (result != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+		File selectedFile = chooser.getSelectedFile();
+		if (selectedFile == null || !selectedFile.exists() || !selectedFile.isFile()) {
+			JOptionPane.showMessageDialog(this, "Invalid file", "Upload", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		UploadProgressDialog progressDialog = new UploadProgressDialog(
+				SwingUtilities.getWindowAncestor(this), selectedFile.getName());
+		progressDialog.showDialog();
+		fileButton.setEnabled(false);
+
+		try {
+			serverHandler.requestUploadFile(selectedFile, conversationId, isGroupConversation,
+					new ServerHandler.UploadListener() {
+						@Override
+						public void onProgress(int percent) {
+							progressDialog.updateProgress(percent);
+						}
+
+						@Override
+						public void onCompleted() {
+							progressDialog.closeDialog();
+							fileButton.setEnabled(true);
+						}
+
+						@Override
+						public void onError(String message) {
+							progressDialog.closeDialog();
+							fileButton.setEnabled(true);
+							String text = message == null ? "Upload failed" : message;
+							JOptionPane.showMessageDialog(ChatPanel.this, text, "Upload", JOptionPane.ERROR_MESSAGE);
+						}
+					});
+		} catch (IOException ex) {
+			progressDialog.closeDialog();
+			fileButton.setEnabled(true);
+			JOptionPane.showMessageDialog(this, "Upload failed", "Upload", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
 	private static ImageIcon loadIcon(String path, int size) {
 		java.net.URL url = ChatPanel.class.getResource(path);
 		if (url == null) {
@@ -244,5 +332,37 @@ public class ChatPanel extends JPanel  {
 		return new ImageIcon(image);
 	}
 
+	private static class UploadProgressDialog {
+		private final JDialog dialog;
+		private final JProgressBar progressBar;
+		private final JLabel statusLabel;
+
+		private UploadProgressDialog(Window owner, String fileName) {
+			dialog = new JDialog(owner, "Uploading", Dialog.ModalityType.MODELESS);
+			dialog.setLayout(new BorderLayout(10, 10));
+			dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+			statusLabel = new JLabel("Uploading: " + (fileName == null ? "file" : fileName));
+			progressBar = new JProgressBar(0, 100);
+			progressBar.setStringPainted(true);
+			progressBar.setValue(0);
+			dialog.add(statusLabel, BorderLayout.NORTH);
+			dialog.add(progressBar, BorderLayout.CENTER);
+			dialog.setSize(360, 130);
+			dialog.setLocationRelativeTo(owner);
+		}
+
+		private void showDialog() {
+			dialog.setVisible(true);
+		}
+
+		private void updateProgress(int percent) {
+			progressBar.setValue(Math.max(0, Math.min(100, percent)));
+		}
+
+		private void closeDialog() {
+			dialog.setVisible(false);
+			dialog.dispose();
+		}
+	}
 
 }

@@ -43,13 +43,22 @@ public class FileService {
       return response;
     }
 
-    // Lưu nguyên tên file gốc, message_id đã là unique identifier trong DB
+    String originalName = nameFile.trim();
+    String newFileName = messageId + "_" + originalName;
+
+    boolean updated = fileDao.updateFileName(messageId, newFileName);
+    if (!updated) {
+      response.setSuccess(false);
+      response.setMessage("Fail to update file name");
+      return response;
+    }
+
     response.setSuccess(true);
     response.setMessageId(messageId);
-    response.setNameFile(nameFile.trim());      // Tên file gốc giữ nguyên
+    response.setNameFile(newFileName);
     response.setConversationId(conversationId);
     response.setSenderId(senderId);
-    System.out.println("[FileService] Upload started: messageId=" + messageId + ", file=" + nameFile.trim());
+    System.out.println("[FileService] Upload started: messageId=" + messageId + ", file=" + newFileName);
     return response;
   }
 

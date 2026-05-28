@@ -5,17 +5,40 @@ import javax.swing.*;
 import java.awt.*;
 
 public class MessageBubble extends JPanel {
+
+	/** Callback được gọi khi người dùng nhấn nút Download trên file message. */
+	public interface DownloadListener {
+		void onDownload(int messageId, String fileName);
+	}
+
 	private final int messageId;
 	private final String displayName;
 	private final String text;
 	private final boolean isSelf;
+	private final boolean isFile;
+	private final String fileName;
+	private DownloadListener downloadListener;
 
+	/** Constructor cho tin nhắn văn bản thông thường. */
 	public MessageBubble(int messageId, String displayName, String text, boolean isSelf, int maxTextWidth) {
 		this.messageId = messageId;
 		this.displayName = displayName;
 		this.text = text;
 		this.isSelf = isSelf;
-		buildUi(maxTextWidth);
+		this.isFile = false;
+		this.fileName = null;
+		buildTextUi(maxTextWidth);
+	}
+
+	/** Constructor cho tin nhắn file (icon file + tên file + nút Download). */
+	public MessageBubble(int messageId, String displayName, String fileName, boolean isSelf) {
+		this.messageId = messageId;
+		this.displayName = displayName;
+		this.text = fileName;
+		this.isSelf = isSelf;
+		this.isFile = true;
+		this.fileName = fileName;
+		buildFileUi();
 	}
 
 	public int getMessageId() {
@@ -34,7 +57,25 @@ public class MessageBubble extends JPanel {
 		return isSelf;
 	}
 
-	private void buildUi(int maxTextWidth) {
+	public boolean isFile() {
+		return isFile;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	/** Đặt listener để xử lý sự kiện Download từ bên ngoài (ChatPanel). */
+	public void setDownloadListener(DownloadListener listener) {
+		this.downloadListener = listener;
+	}
+
+	// -------------------------------------------------------------------------
+	// UI builders
+	// -------------------------------------------------------------------------
+
+	/** Xây dựng giao diện cho tin nhắn văn bản thông thường. */
+	private void buildTextUi(int maxTextWidth) {
 		setLayout(new BorderLayout());
 		setOpaque(true);
 		setBackground(isSelf ? new Color(224, 231, 255) : Color.WHITE);
@@ -73,6 +114,102 @@ public class MessageBubble extends JPanel {
 		add(content, BorderLayout.CENTER);
 	}
 
+	/**
+	 * Xây dựng giao diện cho tin nhắn file:
+	 * [icon file]  [tên file]  [nút Download]
+	 */
+	private void buildFileUi() {
+		setLayout(new BorderLayout());
+		setOpaque(true);
+		setBackground(isSelf ? new Color(224, 231, 255) : Color.WHITE);
+		setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(210, 210, 210), 1, true),
+				BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+
+		JPanel wrapper = new JPanel();
+		wrapper.setOpaque(false);
+		wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
+
+		// --- Tên người gửi (nếu có) ---
+		if (displayName != null && !displayName.trim().isEmpty()) {
+			JLabel nameLabel = new JLabel(displayName.trim());
+			nameLabel.setFont(new Font(null, Font.BOLD, 11));
+			nameLabel.setForeground(new Color(120, 120, 120));
+			nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+			wrapper.add(nameLabel);
+			wrapper.add(Box.createVerticalStrut(6));
+		}
+
+		// --- Hàng ngang: [icon file] [tên file] [khoảng trống] [nút download] ---
+		JPanel fileRow = new JPanel(new BorderLayout(8, 0));
+		fileRow.setOpaque(false);
+		fileRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		// Bên trái: icon + tên file
+		JPanel leftPart = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+		leftPart.setOpaque(false);
+
+		ImageIcon fileIcon = loadIcon("/client/gui/asset/file.png", 22);
+		JLabel iconLabel = fileIcon != null
+				? new JLabel(fileIcon)
+				: new JLabel("[");
+		iconLabel.setVerticalAlignment(SwingConstants.CENTER);
+		leftPart.add(iconLabel);
+
+		// Hiển thị tên file (bỏ phần messageId_ ở đầu nếu có dạng "123_tenfile.txt")
+		String displayFileName = stripMessageIdPrefix(fileName);
+		JLabel fileNameLabel = new JLabel(displayFileName);
+		fileNameLabel.setFont(new Font(null, Font.PLAIN, 13));
+		fileNameLabel.setForeground(new Color(40, 40, 40));
+		leftPart.add(fileNameLabel);
+
+		fileRow.add(leftPart, BorderLayout.CENTER);
+
+		// Bên phải: nút Download
+		ImageIcon downloadIcon = loadIcon("/client/gui/asset/download.png", 18);
+		JButton downloadBtn = downloadIcon != null
+				? new JButton(downloadIcon)
+				: new JButton("↓");
+		downloadBtn.setToolTipText("Download " + displayFileName);
+		downloadBtn.setFocusable(false);
+		downloadBtn.setOpaque(false);
+		downloadBtn.setContentAreaFilled(false);
+		downloadBtn.setBorderPainted(false);
+		downloadBtn.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 2));
+		downloadBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		downloadBtn.addActionListener(e -> {
+			if (downloadListener != null) {
+				downloadListener.onDownload(messageId, fileName);
+			}
+		});
+		fileRow.add(downloadBtn, BorderLayout.EAST);
+
+		wrapper.add(fileRow);
+		add(wrapper, BorderLayout.CENTER);
+	}
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Bỏ prefix dạng "<messageId>_" khỏi tên file nếu có.
+	 * Ví dụ: "42_report.pdf" -> "report.pdf"
+	 */
+	private static String stripMessageIdPrefix(String raw) {
+		if (raw == null) return "";
+		int underscore = raw.indexOf('_');
+		if (underscore > 0) {
+			String prefix = raw.substring(0, underscore);
+			try {
+				Integer.parseInt(prefix);
+				return raw.substring(underscore + 1);
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		return raw;
+	}
+
 	private int measureTextWidth(String message, FontMetrics metrics) {
 		if (message == null || message.isEmpty()) {
 			return 10;
@@ -84,5 +221,13 @@ public class MessageBubble extends JPanel {
 			maxWidth = Math.max(maxWidth, metrics.stringWidth(normalized));
 		}
 		return maxWidth + 4;
+	}
+
+	private static ImageIcon loadIcon(String path, int size) {
+		java.net.URL url = MessageBubble.class.getResource(path);
+		if (url == null) return null;
+		ImageIcon icon = new ImageIcon(url);
+		Image image = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
+		return new ImageIcon(image);
 	}
 }

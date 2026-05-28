@@ -18,8 +18,10 @@ public class ClientAuthService {
     MessageObject msg = new MessageObject(MessageType.LOGIN_REQUEST);
     msg.setUsername(username);
     msg.setPassword(password);
-    out.writeObject(msg);
-    out.flush();
+    synchronized (out) {
+      out.writeObject(msg);
+      out.flush();
+    }
   }
   public MessageObject receiveRespond() throws ClassNotFoundException, IOException {
     MessageObject response = (MessageObject) in.readObject();
@@ -33,8 +35,10 @@ public class ClientAuthService {
       msg.setConfirmPassword(confirmPassword);
       msg.setEmail(email);
       msg.setDisplayName(displayName);
-      out.writeObject(msg);
-      out.flush();
+      synchronized (out) {
+        out.writeObject(msg);
+        out.flush();
+      }
       
   }
 
@@ -42,8 +46,10 @@ public class ClientAuthService {
     MessageObject request = new MessageObject(MessageType.CREATE_SINGLE_CONVERSATION_REQUEST);
     request.setSenderId(senderID);
     request.setReceiverId(receiverID);
-    out.writeObject(request);
-    out.flush();
+    synchronized (out) {
+      out.writeObject(request);
+      out.flush();
+    }
   }
 
 }

@@ -25,37 +25,40 @@ public class ClientHandler implements Runnable {
   private GroupConversationService groupConversationService = new GroupConversationService();
   // Map lưu trữ các FileOutputStream đang mở, key = messageId
   private final java.util.Map<Integer, FileOutputStream> fileStreams = new java.util.HashMap<>();
+
   public ClientHandler(Socket socket) {
     this.socket = socket;
   }
+
   public ObjectOutputStream getOutputStream() {
     return out;
-  } 
+  }
+
   public ObjectInputStream getInputStream() {
     return in;
   }
-
 
   @Override
   public void run() {
     try {
       out = new ObjectOutputStream(socket.getOutputStream());
-      out.flush();  // Quan trọng: gửi stream header
+      out.flush(); // Quan trọng: gửi stream header
       in = new ObjectInputStream(socket.getInputStream());
 
       while (true) {
         MessageObject request = (MessageObject) in.readObject();
-        if (request == null) break;
+        if (request == null)
+          break;
         if (request.getType() == MessageType.LOGIN_REQUEST) {
           AuthService aService = new AuthService();
           MessageObject response = aService.authenticate(request);
-          //System.out.println(request.getUsername()); //test
+          // System.out.println(request.getUsername()); //test
           out.writeObject(response);
           if (response.isSuccess()) {
             this.username = request.getUsername();
             this.userId = response.getUserId();
-            //Add user
-            Server.onlineUsers.put(username,this);
+            // Add user
+            Server.onlineUsers.put(username, this);
             System.out.println(username + " online");
             singleConversationService.sendStatusOnline(userId);
           }
@@ -63,7 +66,7 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.REGISTER_REQUEST) {
           AuthService aService = new AuthService();
           MessageObject response = aService.checkConditionForRegisterAndAdd(request);
-          //System.out.println("Register from port: " + socket.getPort()); //test
+          // System.out.println("Register from port: " + socket.getPort()); //test
           out.writeObject(response);
           out.flush();
         }
@@ -73,9 +76,9 @@ public class ClientHandler implements Runnable {
           out.writeObject(response);
           out.flush();
           if (response.isSuccess()) {
-            //Send cho người đối diện
+            // Send cho người đối diện
             singleConversationService.sendStatusOnline(userId);
-            //Send cho bản thân mình 
+            // Send cho bản thân mình
             SingleConversationService singleConversationService = new SingleConversationService();
             MessageObject response2 = singleConversationService.sendSingleConversationInfo(userId);
             out.writeObject(response2);
@@ -97,9 +100,9 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.SEND_SINGLE_CHAT_MESSAGE_REQUEST) {
           ChatRoutingService chatRoutingService = new ChatRoutingService();
           MessageObject response = chatRoutingService.handleReceiveSingleChatMessage(request);
-          //Gửi cho chính mình
+          // Gửi cho chính mình
           sendChatMessage(response);
-          //Gửi cho người trong cuộc trò chuyện nếu online
+          // Gửi cho người trong cuộc trò chuyện nếu online
           UserDao userDao = new UserDao();
           ChatDao chatDao = new ChatDao();
           int otherUserId = chatDao.getTheOtherUserInSingleConversation(request.getConversationId(), userId);
@@ -113,9 +116,9 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.SEND_GROUP_CHAT_MESSAGE_REQUEST) {
           ChatRoutingService chatRoutingService = new ChatRoutingService();
           MessageObject response = chatRoutingService.handleReceiveGroupChatMessage(request);
-          //Gửi cho chính mình
+          // Gửi cho chính mình
           sendChatMessage(response);
-          //Gửi cho các thành viên trong group nếu online
+          // Gửi cho các thành viên trong group nếu online
           ChatDao chatDao = new ChatDao();
           String[] listUsername = chatDao.getListUserInGroupConversation(request.getConversationId());
           if (listUsername != null) {
@@ -183,15 +186,34 @@ public class ClientHandler implements Runnable {
         }
         if (request.getType() == MessageType.UPLOAD_FILE_CHUNK) {
           int messageId = request.getMessageId();
-          String nameFile = request.getNameFile();   // Ví dụ: "123_baocao.pdf"
-          byte[] data    = request.getFileData();
+          String nameFile = request.getNameFile(); // Ví dụ: "123_baocao.pdf"
+          byte[] data = request.getFileData();
           boolean isLast = request.isLast();
 
           // Mở FileOutputStream lần đầu nếu chưa có (chế độ append)
           FileOutputStream fos = fileStreams.get(messageId);
           if (fos == null) {
-            File dir = new File("server" + File.separator + "data");
-            if (!dir.exists()) dir.mkdirs();
+            File baseDir = new File(System.getProperty("user.dir"));
+            File projectDir = null;
+            File cursor = baseDir;
+            while (cursor != null) {
+              if ("ChatAppProject".equals(cursor.getName())) {
+                projectDir = cursor;
+                break;
+              }
+              File child = new File(cursor, "ChatAppProject");
+              if (child.exists() && child.isDirectory()) {
+                projectDir = child;
+                break;
+              }
+              cursor = cursor.getParentFile();
+            }
+
+            File dir = projectDir == null
+                ? new File(baseDir, "src" + File.separator + "server" + File.separator + "data")
+                : new File(projectDir, "src" + File.separator + "server" + File.separator + "data");
+            if (!dir.exists())
+              dir.mkdirs();
             File saveFile = new File(dir, nameFile);
             fos = new FileOutputStream(saveFile, true); // append = true
             fileStreams.put(messageId, fos);
@@ -217,7 +239,8 @@ public class ClientHandler implements Runnable {
             String[] participants = chatDao.getUsernameInConversation(request.getConversationId());
             if (participants != null) {
               for (String name : participants) {
-                if (name == null || name.trim().isEmpty()) continue;
+                if (name == null || name.trim().isEmpty())
+                  continue;
                 ClientHandler handler = Server.onlineUsers.get(name);
                 if (handler != null) {
                   handler.sendChatMessage(broadcast);
@@ -226,8 +249,7 @@ public class ClientHandler implements Runnable {
             }
           }
         }
-      
-      
+
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {
@@ -239,28 +261,37 @@ public class ClientHandler implements Runnable {
     } finally {
 
       if (username != null) {
-            Server.onlineUsers.remove(username);
-            System.out.println(username + " offline");
-            singleConversationService.sendStatusOnline(userId);
+        Server.onlineUsers.remove(username);
+        System.out.println(username + " offline");
+        singleConversationService.sendStatusOnline(userId);
       }
       // Đóng tất cả FileOutputStream còn đang mở nếu client disconnect giữa chừng
       for (FileOutputStream fos : fileStreams.values()) {
-        try { fos.close(); } catch (IOException e) {}
+        try {
+          fos.close();
+        } catch (IOException e) {
+        }
       }
       fileStreams.clear();
       try {
-        if (in != null) in.close();
-      } catch (IOException e) {}
+        if (in != null)
+          in.close();
+      } catch (IOException e) {
+      }
       try {
-        if (out != null) out.close();
-      } catch (IOException e) {}
+        if (out != null)
+          out.close();
+      } catch (IOException e) {
+      }
       try {
-        if (socket != null && !socket.isClosed()) socket.close();
-      } catch (IOException e) {}
-      
+        if (socket != null && !socket.isClosed())
+          socket.close();
+      } catch (IOException e) {
+      }
+
     }
   }
-  
+
   public void sendStatusOnline() throws IOException {
     MessageObject response = singleConversationService.sendSingleConversationInfo(userId);
     out.writeObject(response);
@@ -270,7 +301,7 @@ public class ClientHandler implements Runnable {
   public void sendChatMessage(MessageObject response) throws IOException {
     out.writeObject(response);
     out.flush();
-  }  
+  }
 
   public void sendGroupConversationInfo(int userId) throws IOException {
     MessageObject response = groupConversationService.sendGroupConversationInfo(userId);
