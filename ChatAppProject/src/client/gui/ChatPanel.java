@@ -213,6 +213,56 @@ public class ChatPanel extends JPanel {
 		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
 		chatArea.setCaretPosition(insertPos);
 		MessageBubble bubble = new MessageBubble(messageId, displayName, fileName.trim(), isSelf);
+		bubble.setDownloadListener((msgId, name) -> {
+			if (serverHandler == null || msgId < 0) return;
+			
+			String cleanName = name;
+			int underscore = cleanName.indexOf('_');
+			if (underscore > 0) {
+				try {
+					Integer.parseInt(cleanName.substring(0, underscore));
+					cleanName = cleanName.substring(underscore + 1);
+				} catch (NumberFormatException ignored) {}
+			}
+
+			JFileChooser chooser = new JFileChooser();
+			chooser.setDialogTitle("Save file as");
+			chooser.setSelectedFile(new File(cleanName));
+			int result = chooser.showSaveDialog(this);
+			if (result != JFileChooser.APPROVE_OPTION) {
+				return;
+			}
+			File saveFile = chooser.getSelectedFile();
+			
+			DownloadProgressDialog progressDialog = new DownloadProgressDialog(
+					SwingUtilities.getWindowAncestor(this), cleanName);
+			progressDialog.showDialog();
+
+			try {
+				serverHandler.requestDownloadFile(msgId, name, saveFile, new ServerHandler.DownloadListener() {
+					@Override
+					public void onProgress(int percent) {
+						progressDialog.updateProgress(percent);
+					}
+
+					@Override
+					public void onCompleted() {
+						progressDialog.closeDialog();
+						JOptionPane.showMessageDialog(ChatPanel.this, "Download complete: " + saveFile.getName(), "Download", JOptionPane.INFORMATION_MESSAGE);
+					}
+
+					@Override
+					public void onError(String message) {
+						progressDialog.closeDialog();
+						String text = message == null ? "Download failed" : message;
+						JOptionPane.showMessageDialog(ChatPanel.this, text, "Download", JOptionPane.ERROR_MESSAGE);
+					}
+				});
+			} catch (IOException ex) {
+				progressDialog.closeDialog();
+				JOptionPane.showMessageDialog(this, "Download failed", "Download", JOptionPane.ERROR_MESSAGE);
+			}
+		});
 		if (messageId >= 0) {
 			messageBubbles.put(messageId, bubble);
 		}
@@ -340,6 +390,39 @@ public class ChatPanel extends JPanel {
 			dialog.setLayout(new BorderLayout(10, 10));
 			dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 			statusLabel = new JLabel("Uploading: " + (fileName == null ? "file" : fileName));
+			progressBar = new JProgressBar(0, 100);
+			progressBar.setStringPainted(true);
+			progressBar.setValue(0);
+			dialog.add(statusLabel, BorderLayout.NORTH);
+			dialog.add(progressBar, BorderLayout.CENTER);
+			dialog.setSize(360, 130);
+			dialog.setLocationRelativeTo(owner);
+		}
+
+		private void showDialog() {
+			dialog.setVisible(true);
+		}
+
+		private void updateProgress(int percent) {
+			progressBar.setValue(Math.max(0, Math.min(100, percent)));
+		}
+
+		private void closeDialog() {
+			dialog.setVisible(false);
+			dialog.dispose();
+		}
+	}
+
+	private static class DownloadProgressDialog {
+		private final JDialog dialog;
+		private final JProgressBar progressBar;
+		private final JLabel statusLabel;
+
+		private DownloadProgressDialog(Window owner, String fileName) {
+			dialog = new JDialog(owner, "Downloading", Dialog.ModalityType.MODELESS);
+			dialog.setLayout(new BorderLayout(10, 10));
+			dialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+			statusLabel = new JLabel("Downloading: " + (fileName == null ? "file" : fileName));
 			progressBar = new JProgressBar(0, 100);
 			progressBar.setStringPainted(true);
 			progressBar.setValue(0);

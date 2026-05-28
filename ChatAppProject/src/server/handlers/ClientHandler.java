@@ -269,6 +269,57 @@ public class ClientHandler implements Runnable {
           }
         }
 
+        if (request.getType() == MessageType.DOWNLOAD_FILE_REQUEST) {
+          String nameFile = request.getNameFile();
+          int messageId = request.getMessageId();
+          File dataDir = FileService.getDataDir();
+          File targetFile = new File(dataDir, nameFile);
+
+          if (!targetFile.exists() || !targetFile.isFile()) {
+            MessageObject errorMsg = new MessageObject(MessageType.DOWNLOAD_FILE_COMPLETE);
+            errorMsg.setSuccess(false);
+            errorMsg.setMessageId(messageId);
+            errorMsg.setMessage("File not found on server");
+            sendChatMessage(errorMsg);
+          } else {
+            long totalSize = targetFile.length();
+            if (totalSize == 0) {
+              MessageObject chunk = new MessageObject(MessageType.DOWNLOAD_FILE_CHUNK);
+              chunk.setMessageId(messageId);
+              chunk.setNameFile(nameFile);
+              chunk.setFileData(new byte[0]);
+              chunk.setTotalSize(0);
+              chunk.setLast(true);
+              sendChatMessage(chunk);
+            } else {
+              byte[] buffer = new byte[64 * 1024];
+              long sent = 0;
+              try (FileInputStream fis = new FileInputStream(targetFile)) {
+                int read;
+                while ((read = fis.read(buffer)) != -1) {
+                  byte[] chunkData = java.util.Arrays.copyOf(buffer, read);
+                  sent += read;
+
+                  MessageObject chunk = new MessageObject(MessageType.DOWNLOAD_FILE_CHUNK);
+                  chunk.setMessageId(messageId);
+                  chunk.setNameFile(nameFile);
+                  chunk.setFileData(chunkData);
+                  chunk.setTotalSize((int) totalSize);
+                  chunk.setLast(sent >= totalSize);
+                  sendChatMessage(chunk);
+                }
+              } catch (IOException ex) {
+                ex.printStackTrace();
+                MessageObject errorMsg = new MessageObject(MessageType.DOWNLOAD_FILE_COMPLETE);
+                errorMsg.setSuccess(false);
+                errorMsg.setMessageId(messageId);
+                errorMsg.setMessage("Error reading file on server");
+                sendChatMessage(errorMsg);
+              }
+            }
+          }
+        }
+
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {

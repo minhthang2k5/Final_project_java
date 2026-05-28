@@ -2,6 +2,7 @@ package client;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -40,6 +41,50 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
   private DashBoardPanel pendingDashBoardPanel;
   private final Map<Integer, UploadTask> pendingUploads = new HashMap<>();
   private final Map<Integer, UploadTask> activeUploads = new HashMap<>();
+  private final Map<String, DownloadTask> activeDownloads = new HashMap<>();
+
+  public interface DownloadListener {
+    void onProgress(int percent);
+
+    void onCompleted();
+
+    void onError(String message);
+  }
+
+  private static class DownloadTask {
+    private final File saveFile;
+    private final String serverFileName;
+    private final DownloadListener listener;
+    private FileOutputStream fos;
+    private long receivedBytes = 0;
+
+    private DownloadTask(File saveFile, String serverFileName, DownloadListener listener) {
+      this.saveFile = saveFile;
+      this.serverFileName = serverFileName;
+      this.listener = listener;
+    }
+
+    private void notifyProgress(int percent) {
+      if (listener == null) {
+        return;
+      }
+      SwingUtilities.invokeLater(() -> listener.onProgress(percent));
+    }
+
+    private void notifyCompleted() {
+      if (listener == null) {
+        return;
+      }
+      SwingUtilities.invokeLater(listener::onCompleted);
+    }
+
+    private void notifyError(String message) {
+      if (listener == null) {
+        return;
+      }
+      SwingUtilities.invokeLater(() -> listener.onError(message));
+    }
+  }
 
   public interface UploadListener {
     void onProgress(int percent);
@@ -211,6 +256,28 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     long length = file.length();
     int safeSize = length > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) length;
     request.setTotalSize(safeSize);
+    writeMessage(request);
+  }
+
+  public void requestDownloadFile(int messageId, String serverFileName, File saveFile, DownloadListener listener) throws IOException {
+    if (serverFileName == null || serverFileName.trim().isEmpty() || saveFile == null) {
+      if (listener != null) {
+        listener.onError("Invalid file parameters");
+      }
+      return;
+    }
+    if (activeDownloads.containsKey(serverFileName)) {
+      if (listener != null) {
+        listener.onError("Download in progress");
+      }
+      return;
+    }
+    DownloadTask task = new DownloadTask(saveFile, serverFileName, listener);
+    activeDownloads.put(serverFileName, task);
+
+    MessageObject request = new MessageObject(MessageType.DOWNLOAD_FILE_REQUEST);
+    request.setMessageId(messageId);
+    request.setNameFile(serverFileName);
     writeMessage(request);
   }
 
@@ -521,6 +588,54 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
 
       if (respond.getType() == MessageType.UPLOAD_FILE_COMPLETE_RESPONSE) {
         handleUploadCompleteResponse(respond);
+      }
+
+      if (respond.getType() == MessageType.DOWNLOAD_FILE_CHUNK) {
+        String nameFile = respond.getNameFile();
+        DownloadTask task = activeDownloads.get(nameFile);
+        if (task != null) {
+          try {
+            if (task.fos == null) {
+              task.fos = new FileOutputStream(task.saveFile, false);
+            }
+            byte[] data = respond.getFileData();
+            if (data != null && data.length > 0) {
+              task.fos.write(data);
+              task.receivedBytes += data.length;
+            }
+            int totalSize = respond.getTotalSize();
+            if (totalSize > 0) {
+              int percent = (int) Math.min(100, (task.receivedBytes * 100) / totalSize);
+              task.notifyProgress(percent);
+            }
+
+            if (respond.isLast()) {
+              task.fos.close();
+              activeDownloads.remove(nameFile);
+              task.notifyProgress(100);
+              task.notifyCompleted();
+            }
+          } catch (IOException ex) {
+            activeDownloads.remove(nameFile);
+            if (task.fos != null) {
+              try { task.fos.close(); } catch (IOException ignored) {}
+            }
+            task.notifyError("Error saving file locally");
+          }
+        }
+      }
+
+      if (respond.getType() == MessageType.DOWNLOAD_FILE_COMPLETE) {
+        String nameFile = respond.getNameFile();
+        DownloadTask task = activeDownloads.remove(nameFile);
+        if (task != null) {
+          if (task.fos != null) {
+            try { task.fos.close(); } catch (IOException ignored) {}
+          }
+          if (!respond.isSuccess()) {
+            task.notifyError(respond.getMessage() == null ? "Download failed" : respond.getMessage());
+          }
+        }
       }
 
     }

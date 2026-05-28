@@ -1,5 +1,7 @@
 package server.Service;
 
+import java.io.File;
+
 import common.net.MessageObject;
 import common.net.MessageType;
 import server.dao.FileDao;
@@ -7,6 +9,34 @@ import server.dao.FileDao;
 public class FileService {
 
   private FileDao fileDao = new FileDao();
+
+  /**
+   * Trả về thư mục server/data/ nơi lưu file upload.
+   * Dùng chung cho cả upload (ClientHandler) và download.
+   */
+  public static File getDataDir() {
+    File baseDir = new File(System.getProperty("user.dir"));
+    File projectDir = null;
+    File cursor = baseDir;
+    while (cursor != null) {
+      if ("ChatAppProject".equals(cursor.getName())) {
+        projectDir = cursor;
+        break;
+      }
+      File child = new File(cursor, "ChatAppProject");
+      if (child.exists() && child.isDirectory()) {
+        projectDir = child;
+        break;
+      }
+      cursor = cursor.getParentFile();
+    }
+    File dir = projectDir == null
+        ? new File(baseDir, "src" + File.separator + "server" + File.separator + "data")
+        : new File(projectDir, "src" + File.separator + "server" + File.separator + "data");
+    if (!dir.exists())
+      dir.mkdirs();
+    return dir;
+  }
 
   /**
    * Xử lý yêu cầu bắt đầu upload file từ Client.
