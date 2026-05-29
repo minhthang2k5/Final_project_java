@@ -7,6 +7,9 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+
 import client.ServerHandler;
 import client.gui.components.MessageBubble;
 import common.models.GroupConversationInfo;
@@ -29,7 +32,9 @@ public class ChatPanel extends JPanel {
 	private final Map<Integer, MessageBubble> messageBubbles;
 	private final JLabel headerTitle;
 	private final JTextPane chatArea;
-	private final JTextField chatInput;
+	private final JTextArea chatInput;
+	private final JButton enterModeButton;
+	private boolean enterToSend = true;
 	private final JButton fileButton;
 	private final JButton micButton;
 	private final JButton sendButton;
@@ -75,9 +80,43 @@ public class ChatPanel extends JPanel {
 		JPanel inputPanel = new JPanel(new BorderLayout(8, 0));
 		inputPanel.setBackground(Color.white);
 		inputPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 220, 220)));
-		chatInput = new JTextField();
+		chatInput = new JTextArea();
 		chatInput.setFont(new Font(null, Font.PLAIN, 14));
+		chatInput.setLineWrap(true);
+		chatInput.setWrapStyleWord(true);
 		chatInput.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+		chatInput.setRows(1);
+		JScrollPane inputScroll = new JScrollPane(chatInput);
+		inputScroll.setBorder(BorderFactory.createEmptyBorder());
+		inputScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		inputScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		inputScroll.setPreferredSize(new Dimension(0, 60));
+		inputScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+
+		// Key bindings: Enter & Shift+Enter
+		chatInput.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "enterAction");
+		chatInput.getActionMap().put("enterAction", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (enterToSend) {
+					sendCurrentMessage();
+				} else {
+					chatInput.insert("\n", chatInput.getCaretPosition());
+				}
+			}
+		});
+		chatInput.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, java.awt.event.InputEvent.SHIFT_DOWN_MASK), "shiftEnterAction");
+		chatInput.getActionMap().put("shiftEnterAction", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (enterToSend) {
+					chatInput.insert("\n", chatInput.getCaretPosition());
+				} else {
+					sendCurrentMessage();
+				}
+			}
+		});
+
 		ImageIcon fileIcon = loadIcon("/client/gui/asset/file.png", 18);
 		ImageIcon micIcon = loadIcon("/client/gui/asset/microphone.png", 18);
 		fileButton = new JButton(fileIcon);
@@ -96,6 +135,19 @@ public class ChatPanel extends JPanel {
 		micButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 		fileButton.setPreferredSize(new Dimension(36, 36));
 		micButton.setPreferredSize(new Dimension(36, 36));
+
+		// Toggle button: Enter mode
+		enterModeButton = new JButton("⏎ Send");
+		enterModeButton.setFocusable(false);
+		enterModeButton.setFont(new Font(null, Font.PLAIN, 11));
+		enterModeButton.setBackground(new Color(230, 233, 255));
+		enterModeButton.setForeground(new Color(0x63, 0x66, 0xF1));
+		enterModeButton.setBorderPainted(false);
+		enterModeButton.setOpaque(true);
+		enterModeButton.setToolTipText("Enter = Send message, Shift+Enter = New line");
+		enterModeButton.setPreferredSize(new Dimension(80, 28));
+		enterModeButton.addActionListener(event -> toggleEnterMode());
+
 		sendButton = new JButton("Send");
 		sendButton.setFocusable(false);
 		sendButton.setBackground(new Color(0x63, 0x66, 0xF1));
@@ -105,11 +157,11 @@ public class ChatPanel extends JPanel {
 		sendButton.setBorderPainted(false);
 		sendButton.setPreferredSize(new Dimension(90, 36));
 		sendButton.addActionListener(event -> sendCurrentMessage());
-		chatInput.addActionListener(event -> sendCurrentMessage());
 		fileButton.addActionListener(event -> handleFileUpload());
-		inputPanel.add(chatInput, BorderLayout.CENTER);
+		inputPanel.add(inputScroll, BorderLayout.CENTER);
 		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
 		actionPanel.setOpaque(false);
+		actionPanel.add(enterModeButton);
 		actionPanel.add(fileButton);
 		actionPanel.add(micButton);
 		actionPanel.add(sendButton);
@@ -310,7 +362,7 @@ public class ChatPanel extends JPanel {
 		messageBubbles.clear();
 	}
 
-	public JTextField getChatInput() {
+	public JTextArea getChatInput() {
 		return chatInput;
 	}
 
@@ -346,6 +398,18 @@ public class ChatPanel extends JPanel {
 		}
 
 		chatInput.setText("");
+		chatInput.requestFocusInWindow();
+	}
+
+	private void toggleEnterMode() {
+		enterToSend = !enterToSend;
+		if (enterToSend) {
+			enterModeButton.setText("⏎ Send");
+			enterModeButton.setToolTipText("Enter = Send message, Shift+Enter = New line");
+		} else {
+			enterModeButton.setText("⏎ Newline");
+			enterModeButton.setToolTipText("Enter = New line, Shift+Enter = Send message");
+		}
 		chatInput.requestFocusInWindow();
 	}
 
