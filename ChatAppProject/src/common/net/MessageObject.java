@@ -203,4 +203,13 @@ public class MessageObject implements Serializable {
   public void setLast(boolean isLast) {
     this.isLast = isLast;
   }
+
+  // Online users
+  private ArrayList<String> onlineUsernames;
+  public ArrayList<String> getOnlineUsernames() {
+    return onlineUsernames;
+  }
+  public void setOnlineUsernames(ArrayList<String> onlineUsernames) {
+    this.onlineUsernames = onlineUsernames;
+  }
 } 

@@ -46,4 +46,8 @@ public enum MessageType {
     //Delete message
     DELETE_MESSAGE_REQUEST,
     DELETE_MESSAGE_RESPONSE,
+
+    //Online users
+    GET_ONLINE_USERS_REQUEST,
+    GET_ONLINE_USERS_RESPONSE,
 }

@@ -4,12 +4,14 @@ import javax.swing.*;
 
 import client.ServerHandler;
 import client.gui.components.UserListCellRenderer;
+import client.model.ServerInfo;
 import common.models.GroupConversationInfo;
 import common.models.SingleConversationInfo;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.event.ListSelectionEvent;
@@ -20,6 +22,8 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 	private final JList<GroupConversationInfo> groupList;
 	private final JLabel userNameLabel;
 	private final JLabel userIdLabel;
+	private final JLabel serverNameLabel;
+	private final JLabel serverAddrLabel;
 	private final JButton signOutButton;
 	private final JButton addPeopleButton;
 	private final JButton addGroupButton;
@@ -28,6 +32,7 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 	private final Map<Integer, ChatPanel> chatPanels; // conversationId
 	private AddGroupDialog addGroupDialog;
 	ServerHandler serverHandler;
+	private ServerInfo connectedServerInfo;
 	public DashBoardPanel() {
 		this.setBounds(0, 0, 900, 700);
 		this.setLayout(new BorderLayout());
@@ -38,6 +43,37 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		leftPanel.setPreferredSize(new Dimension(260, 0));
 		leftPanel.setBackground(Color.white);
 		leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(220, 220, 220)));
+
+		// === Server info section ===
+		JPanel serverInfoSection = new JPanel();
+		serverInfoSection.setBackground(new Color(240, 243, 255));
+		serverInfoSection.setLayout(new BoxLayout(serverInfoSection, BoxLayout.Y_AXIS));
+		serverInfoSection.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(210, 215, 230)),
+				BorderFactory.createEmptyBorder(8, 16, 8, 16)));
+
+		JLabel connectedLabel = new JLabel("\u25CF Connected to:");
+		connectedLabel.setFont(new Font(null, Font.PLAIN, 11));
+		connectedLabel.setForeground(new Color(52, 168, 83));
+		connectedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		serverInfoSection.add(connectedLabel);
+
+		serverNameLabel = new JLabel("Server");
+		serverNameLabel.setFont(new Font(null, Font.BOLD, 13));
+		serverNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		serverInfoSection.add(serverNameLabel);
+
+		serverAddrLabel = new JLabel("localhost:4321");
+		serverAddrLabel.setFont(new Font(null, Font.PLAIN, 11));
+		serverAddrLabel.setForeground(new Color(100, 100, 100));
+		serverAddrLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		serverInfoSection.add(serverAddrLabel);
+
+		// === Top section: server info + user info ===
+		JPanel topSection = new JPanel();
+		topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
+		topSection.setBackground(Color.white);
+		topSection.add(serverInfoSection);
 
 		JPanel leftHeader = new JPanel(new BorderLayout());
 		leftHeader.setBackground(Color.white);
@@ -66,7 +102,9 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		signOutButton.setBorderPainted(false);
 		leftHeader.add(userRow, BorderLayout.WEST);
 		leftHeader.add(signOutButton, BorderLayout.EAST);
-		leftPanel.add(leftHeader, BorderLayout.NORTH);
+		topSection.add(leftHeader);
+
+		leftPanel.add(topSection, BorderLayout.NORTH);
 
 		DefaultListModel<SingleConversationInfo> singleModel = new DefaultListModel<>();
 		DefaultListModel<GroupConversationInfo> groupModel = new DefaultListModel<>();
@@ -422,6 +460,23 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		int currentUserId = serverHandler == null ? 0 : serverHandler.getCurrentUserId();
 		addGroupDialog.prepareForNewGroup(currentUserId);
 		addGroupDialog.setVisible(true);
+	}
+
+	// === Server info & Online users ===
+
+	public void setConnectedServerInfo(ServerInfo info) {
+		this.connectedServerInfo = info;
+		if (info != null) {
+			serverNameLabel.setText(info.getName());
+			serverAddrLabel.setText(info.getHost() + ":" + info.getPort());
+		} else {
+			serverNameLabel.setText("Not connected");
+			serverAddrLabel.setText("");
+		}
+	}
+
+	public ServerInfo getConnectedServerInfo() {
+		return connectedServerInfo;
 	}
 
 }

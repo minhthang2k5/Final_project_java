@@ -205,6 +205,11 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
     writeMessage(request);
   }
 
+  public void requestOnlineUsers() throws IOException {
+    MessageObject request = new MessageObject(MessageType.GET_ONLINE_USERS_REQUEST);
+    writeMessage(request);
+  }
+
   public void requestSignOut() throws IOException {
     String username = mainFrame.getCurrentUser().getUsername();
     int userId = mainFrame.getCurrentUser().getUserId();
