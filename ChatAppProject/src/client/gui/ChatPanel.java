@@ -37,6 +37,7 @@ public class ChatPanel extends JPanel {
 	private boolean enterToSend = true;
 	private final JButton fileButton;
 	private final JButton micButton;
+	private final JButton emojiButton;
 	private final JButton sendButton;
 
 	public ChatPanel() {
@@ -119,22 +120,55 @@ public class ChatPanel extends JPanel {
 
 		ImageIcon fileIcon = loadIcon("/client/gui/asset/file.png", 18);
 		ImageIcon micIcon = loadIcon("/client/gui/asset/microphone.png", 18);
+		ImageIcon emojiIcon = loadIcon("/client/gui/asset/emoji/happy-face.png", 18);
 		fileButton = new JButton(fileIcon);
 		micButton = new JButton(micIcon);
+		emojiButton = new JButton(emojiIcon);
 		fileButton.setToolTipText("Attach file");
 		micButton.setToolTipText("Voice message");
+		emojiButton.setToolTipText("Insert Emoji");
 		fileButton.setFocusable(false);
 		micButton.setFocusable(false);
+		emojiButton.setFocusable(false);
 		fileButton.setOpaque(false);
 		micButton.setOpaque(false);
+		emojiButton.setOpaque(false);
 		fileButton.setContentAreaFilled(false);
 		micButton.setContentAreaFilled(false);
+		emojiButton.setContentAreaFilled(false);
 		fileButton.setBorderPainted(false);
 		micButton.setBorderPainted(false);
+		emojiButton.setBorderPainted(false);
 		fileButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 		micButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		emojiButton.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 		fileButton.setPreferredSize(new Dimension(36, 36));
 		micButton.setPreferredSize(new Dimension(36, 36));
+		emojiButton.setPreferredSize(new Dimension(36, 36));
+		
+		JPopupMenu emojiPopup = new JPopupMenu();
+		String[] emojis = {"angry", "confused", "cry", "happy-face", "love"};
+		String[] emojiCodes = {":angry:", ":confused:", ":cry:", ":happy-face:", ":love:"};
+		for (int i = 0; i < emojis.length; i++) {
+			final String code = emojiCodes[i];
+			ImageIcon icon = loadIcon("/client/gui/asset/emoji/" + emojis[i] + ".png", 24);
+			JMenuItem item = new JMenuItem(icon);
+			item.setToolTipText(code);
+			item.addActionListener(e -> {
+				if (serverHandler == null || conversationId <= 0) return;
+				try {
+					if (isGroupConversation) {
+						serverHandler.requestSendGroupMessage(code, conversationId);
+					} else {
+						serverHandler.requestSendMessage(code, conversationId);
+					}
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+			});
+			emojiPopup.add(item);
+		}
+		emojiButton.addActionListener(e -> emojiPopup.show(emojiButton, 0, -emojiPopup.getPreferredSize().height));
 
 		// Toggle button: Enter mode
 		enterModeButton = new JButton("⏎ Send");
@@ -162,6 +196,7 @@ public class ChatPanel extends JPanel {
 		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
 		actionPanel.setOpaque(false);
 		actionPanel.add(enterModeButton);
+		actionPanel.add(emojiButton);
 		actionPanel.add(fileButton);
 		actionPanel.add(micButton);
 		actionPanel.add(sendButton);

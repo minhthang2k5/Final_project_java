@@ -118,18 +118,41 @@ public class MessageBubble extends JPanel {
 				BorderFactory.createLineBorder(new Color(210, 210, 210), 1, true),
 				BorderFactory.createEmptyBorder(6, 10, 6, 10)));
 
-		JTextArea messageText = new JTextArea(text);
+		JTextPane messageText = new JTextPane();
 		messageText.setEditable(false);
-		messageText.setLineWrap(true);
-		messageText.setWrapStyleWord(true);
 		messageText.setFont(new Font(null, Font.PLAIN, 14));
 		messageText.setOpaque(false);
 		messageText.setBorder(null);
 
-		int textWidth = measureTextWidth(text, messageText.getFontMetrics(messageText.getFont()));
-		int targetWidth = Math.min(textWidth, maxTextWidth);
-		messageText.setSize(new Dimension(targetWidth, Short.MAX_VALUE));
+		javax.swing.text.StyledDocument doc = messageText.getStyledDocument();
+		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(":([a-z-]+):");
+		java.util.regex.Matcher matcher = pattern.matcher(text);
+		int lastEnd = 0;
+		try {
+			while (matcher.find()) {
+				if (matcher.start() > lastEnd) {
+					doc.insertString(doc.getLength(), text.substring(lastEnd, matcher.start()), null);
+				}
+				String emojiCode = matcher.group(1);
+				ImageIcon icon = loadIcon("/client/gui/asset/emoji/" + emojiCode + ".png", 20);
+				if (icon != null) {
+					messageText.setCaretPosition(doc.getLength());
+					messageText.insertIcon(icon);
+				} else {
+					doc.insertString(doc.getLength(), matcher.group(0), null);
+				}
+				lastEnd = matcher.end();
+			}
+			if (lastEnd < text.length()) {
+				doc.insertString(doc.getLength(), text.substring(lastEnd), null);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		messageText.setSize(new Dimension(maxTextWidth, Short.MAX_VALUE));
 		Dimension textPreferred = messageText.getPreferredSize();
+		int targetWidth = Math.min(textPreferred.width + 5, maxTextWidth);
 		messageText.setPreferredSize(new Dimension(targetWidth, textPreferred.height));
 
 		JPanel content = new JPanel();
