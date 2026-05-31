@@ -377,6 +377,13 @@ public class ClientHandler implements Runnable {
           }
         }
 
+        if (request.getType() == MessageType.GET_ONLINE_USERS_REQUEST) {
+          MessageObject response = new MessageObject(MessageType.GET_ONLINE_USERS_RESPONSE);
+          java.util.ArrayList<String> onlineList = new java.util.ArrayList<>(Server.onlineUsers.keySet());
+          response.setOnlineUsernames(onlineList);
+          sendChatMessage(response);
+        }
+
       }
 
     } catch (java.io.EOFException | java.net.SocketException e) {
