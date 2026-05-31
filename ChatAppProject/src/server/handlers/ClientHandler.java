@@ -1,6 +1,8 @@
 package server.handlers;
 
 import java.net.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import common.net.MessageObject;
 import common.net.MessageType;
@@ -26,9 +28,30 @@ public class ClientHandler implements Runnable {
   // Map lưu trữ các FileOutputStream đang mở, key = messageId
   private final java.util.Map<Integer, FileOutputStream> fileStreams = new java.util.HashMap<>();
 
+  // Metadata cho Server GUI
+  private final Server server; // null nếu dùng constructor cũ
+  private final String clientIP;
+  private final int clientPort;
+  private final String connectedTime;
+
   public ClientHandler(Socket socket) {
-    this.socket = socket;
+    this(socket, null);
   }
+
+  public ClientHandler(Socket socket, Server server) {
+    this.socket = socket;
+    this.server = server;
+    this.clientIP = socket.getInetAddress().getHostAddress();
+    this.clientPort = socket.getPort();
+    this.connectedTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+  }
+
+  // Getters cho GUI
+  public String getClientIP() { return clientIP; }
+  public int getClientPort() { return clientPort; }
+  public String getConnectedTime() { return connectedTime; }
+  public String getUsername() { return username; }
+  public int getUserId() { return userId; }
 
   public ObjectOutputStream getOutputStream() {
     return out;
@@ -59,7 +82,12 @@ public class ClientHandler implements Runnable {
             this.userId = response.getUserId();
             // Add user
             Server.onlineUsers.put(username, this);
-            System.out.println(username + " online");
+            if (server != null) {
+              server.log(username + " logged in (" + clientIP + ":" + clientPort + ")");
+              server.notifyClientUpdated(this);
+            } else {
+              System.out.println(username + " online");
+            }
             singleConversationService.sendStatusOnline(userId);
           }
         }
@@ -136,7 +164,11 @@ public class ClientHandler implements Runnable {
         if (request.getType() == MessageType.SIGNOUT_REQUEST) {
           if (this.username != null) {
             Server.onlineUsers.remove(this.username);
-            System.out.println(this.username + " offline");
+            if (server != null) {
+              server.log(this.username + " signed out");
+            } else {
+              System.out.println(this.username + " offline");
+            }
             singleConversationService.sendStatusOnline(this.userId);
           }
           this.username = null;
@@ -357,7 +389,11 @@ public class ClientHandler implements Runnable {
 
       if (username != null) {
         Server.onlineUsers.remove(username);
-        System.out.println(username + " offline");
+        if (server != null) {
+          server.log(username + " disconnected");
+        } else {
+          System.out.println(username + " offline");
+        }
         singleConversationService.sendStatusOnline(userId);
       }
       // Đóng tất cả FileOutputStream còn đang mở nếu client disconnect giữa chừng
@@ -368,22 +404,12 @@ public class ClientHandler implements Runnable {
         }
       }
       fileStreams.clear();
-      try {
-        if (in != null)
-          in.close();
-      } catch (IOException e) {
-      }
-      try {
-        if (out != null)
-          out.close();
-      } catch (IOException e) {
-      }
-      try {
-        if (socket != null && !socket.isClosed())
-          socket.close();
-      } catch (IOException e) {
-      }
+      closeConnection();
 
+      // Notify server GUI
+      if (server != null) {
+        server.notifyClientDisconnected(this);
+      }
     }
   }
 
@@ -402,5 +428,24 @@ public class ClientHandler implements Runnable {
     MessageObject response = groupConversationService.sendGroupConversationInfo(userId);
     out.writeObject(response);
     out.flush();
+  }
+
+  /** Đóng tất cả stream và socket của client này. */
+  public void closeConnection() {
+    try {
+      if (in != null)
+        in.close();
+    } catch (IOException e) {
+    }
+    try {
+      if (out != null)
+        out.close();
+    } catch (IOException e) {
+    }
+    try {
+      if (socket != null && !socket.isClosed())
+        socket.close();
+    } catch (IOException e) {
+    }
   }
 }
