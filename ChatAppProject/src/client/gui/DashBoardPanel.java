@@ -396,12 +396,14 @@ public class DashBoardPanel extends JPanel implements ActionListener, ListSelect
 		if (e.getSource() == singleList) {
 			SingleConversationInfo selected = singleList.getSelectedValue();
 			if (selected != null) {
+				groupList.clearSelection();
 				openChat(selected);
 			}
 		}
 		if (e.getSource() == groupList) {
 			GroupConversationInfo selected = groupList.getSelectedValue();
 			if (selected != null) {
+				singleList.clearSelection();
 				openChat(selected);
 			}
 		}

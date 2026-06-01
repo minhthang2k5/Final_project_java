@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import client.util.AudioPlayer;
+import client.util.AudioRecorder;
+
 public class ChatPanel extends JPanel {
 	private static final int MAX_BUBBLE_TEXT_WIDTH = 320;
 
@@ -39,6 +42,8 @@ public class ChatPanel extends JPanel {
 	private final JButton micButton;
 	private final JButton emojiButton;
 	private final JButton sendButton;
+	private final AudioRecorder audioRecorder = new AudioRecorder();
+	private final AudioPlayer audioPlayer = new AudioPlayer();
 
 	public ChatPanel() {
 		this("Conversation", -1, null);
@@ -192,6 +197,46 @@ public class ChatPanel extends JPanel {
 		sendButton.setPreferredSize(new Dimension(90, 36));
 		sendButton.addActionListener(event -> sendCurrentMessage());
 		fileButton.addActionListener(event -> handleFileUpload());
+		
+		micButton.addMouseListener(new java.awt.event.MouseAdapter() {
+			private File tempVoiceFile;
+			@Override
+			public void mousePressed(java.awt.event.MouseEvent e) {
+				if (serverHandler == null || conversationId <= 0) return;
+				try {
+					tempVoiceFile = File.createTempFile("voice_", ".wav");
+					audioRecorder.startRecording(tempVoiceFile);
+					micButton.setBackground(new Color(255, 100, 100));
+					micButton.setOpaque(true);
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			@Override
+			public void mouseReleased(java.awt.event.MouseEvent e) {
+				if (serverHandler == null || conversationId <= 0) return;
+				micButton.setBackground(null);
+				micButton.setOpaque(false);
+				long duration = audioRecorder.stopRecording();
+				if (duration > 500 && tempVoiceFile != null && tempVoiceFile.exists()) {
+					try {
+						serverHandler.requestUploadFile(tempVoiceFile, conversationId, isGroupConversation, new ServerHandler.UploadListener() {
+							@Override
+							public void onProgress(int percent) {}
+							@Override
+							public void onCompleted() {}
+							@Override
+							public void onError(String message) {
+								JOptionPane.showMessageDialog(ChatPanel.this, message, "Upload Voice Error", JOptionPane.ERROR_MESSAGE);
+							}
+						});
+					} catch (IOException ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		});
+
 		inputPanel.add(inputScroll, BorderLayout.CENTER);
 		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
 		actionPanel.setOpaque(false);
@@ -314,56 +359,106 @@ public class ChatPanel extends JPanel {
 		StyleConstants.setSpaceBelow(paragraphStyle, 6f);
 		chatArea.setCaretPosition(insertPos);
 		MessageBubble bubble = new MessageBubble(messageId, displayName, fileName.trim(), isSelf);
-		bubble.setDownloadListener((msgId, name) -> {
-			if (serverHandler == null || msgId < 0) return;
-			
-			String cleanName = name;
-			int underscore = cleanName.indexOf('_');
-			if (underscore > 0) {
+		
+		if (fileName.toLowerCase().endsWith(".wav")) {
+			bubble.setAudioPlayListener(new MessageBubble.AudioPlayListener() {
+				@Override
+				public void onPlayRequested(int msgId, String name, Runnable onComplete) {
+					audioPlayer.stop();
+					File tempVoiceDir = new File(System.getProperty("java.io.tmpdir"), "ChatApp_Voice");
+					if (!tempVoiceDir.exists()) tempVoiceDir.mkdirs();
+					File localFile = new File(tempVoiceDir, msgId + "_" + name);
+					
+					if (localFile.exists()) {
+						try {
+							audioPlayer.play(localFile, onComplete);
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							onComplete.run();
+						}
+					} else {
+						try {
+							serverHandler.requestDownloadFile(msgId, name, localFile, new ServerHandler.DownloadListener() {
+								@Override
+								public void onProgress(int percent) {}
+								@Override
+								public void onCompleted() {
+									try {
+										audioPlayer.play(localFile, onComplete);
+									} catch (Exception ex) {
+										ex.printStackTrace();
+										onComplete.run();
+									}
+								}
+								@Override
+								public void onError(String message) {
+									onComplete.run();
+								}
+							});
+						} catch (IOException ex) {
+							ex.printStackTrace();
+							onComplete.run();
+						}
+					}
+				}
+				@Override
+				public void onStopRequested() {
+					audioPlayer.stop();
+				}
+			});
+		} else {
+			bubble.setDownloadListener((msgId, name) -> {
+				if (serverHandler == null || msgId < 0) return;
+				
+				String cleanName = name;
+				int underscore = cleanName.indexOf('_');
+				if (underscore > 0) {
+					try {
+						Integer.parseInt(cleanName.substring(0, underscore));
+						cleanName = cleanName.substring(underscore + 1);
+					} catch (NumberFormatException ignored) {}
+				}
+
+				JFileChooser chooser = new JFileChooser();
+				chooser.setDialogTitle("Save file as");
+				chooser.setSelectedFile(new File(cleanName));
+				int result = chooser.showSaveDialog(this);
+				if (result != JFileChooser.APPROVE_OPTION) {
+					return;
+				}
+				File saveFile = chooser.getSelectedFile();
+				
+				DownloadProgressDialog progressDialog = new DownloadProgressDialog(
+						SwingUtilities.getWindowAncestor(this), cleanName);
+				progressDialog.showDialog();
+
 				try {
-					Integer.parseInt(cleanName.substring(0, underscore));
-					cleanName = cleanName.substring(underscore + 1);
-				} catch (NumberFormatException ignored) {}
-			}
+					serverHandler.requestDownloadFile(msgId, name, saveFile, new ServerHandler.DownloadListener() {
+						@Override
+						public void onProgress(int percent) {
+							progressDialog.updateProgress(percent);
+						}
 
-			JFileChooser chooser = new JFileChooser();
-			chooser.setDialogTitle("Save file as");
-			chooser.setSelectedFile(new File(cleanName));
-			int result = chooser.showSaveDialog(this);
-			if (result != JFileChooser.APPROVE_OPTION) {
-				return;
-			}
-			File saveFile = chooser.getSelectedFile();
-			
-			DownloadProgressDialog progressDialog = new DownloadProgressDialog(
-					SwingUtilities.getWindowAncestor(this), cleanName);
-			progressDialog.showDialog();
+						@Override
+						public void onCompleted() {
+							progressDialog.closeDialog();
+							JOptionPane.showMessageDialog(ChatPanel.this, "Download complete: " + saveFile.getName(), "Download", JOptionPane.INFORMATION_MESSAGE);
+						}
 
-			try {
-				serverHandler.requestDownloadFile(msgId, name, saveFile, new ServerHandler.DownloadListener() {
-					@Override
-					public void onProgress(int percent) {
-						progressDialog.updateProgress(percent);
-					}
-
-					@Override
-					public void onCompleted() {
-						progressDialog.closeDialog();
-						JOptionPane.showMessageDialog(ChatPanel.this, "Download complete: " + saveFile.getName(), "Download", JOptionPane.INFORMATION_MESSAGE);
-					}
-
-					@Override
-					public void onError(String message) {
-						progressDialog.closeDialog();
-						String text = message == null ? "Download failed" : message;
-						JOptionPane.showMessageDialog(ChatPanel.this, text, "Download", JOptionPane.ERROR_MESSAGE);
-					}
-				});
-			} catch (IOException ex) {
-				progressDialog.closeDialog();
-				JOptionPane.showMessageDialog(this, "Download failed", "Download", JOptionPane.ERROR_MESSAGE);
-			}
-		});
+						@Override
+						public void onError(String message) {
+							progressDialog.closeDialog();
+							String text = message == null ? "Download failed" : message;
+							JOptionPane.showMessageDialog(ChatPanel.this, text, "Download", JOptionPane.ERROR_MESSAGE);
+						}
+					});
+				} catch (IOException ex) {
+					progressDialog.closeDialog();
+					JOptionPane.showMessageDialog(this, "Download failed", "Download", JOptionPane.ERROR_MESSAGE);
+				}
+			});
+		}
+		
 		bubble.setDeleteListener(msgId -> {
 			if (serverHandler == null || msgId < 0 || conversationId <= 0) return;
 			int choice = JOptionPane.showConfirmDialog(ChatPanel.this, 

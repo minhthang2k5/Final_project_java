@@ -11,6 +11,11 @@ public class MessageBubble extends JPanel {
 		void onDownload(int messageId, String fileName);
 	}
 
+	public interface AudioPlayListener {
+		void onPlayRequested(int messageId, String fileName, Runnable onComplete);
+		void onStopRequested();
+	}
+
 	public interface DeleteListener {
 		void onDeleteRequested(int messageId);
 	}
@@ -22,6 +27,7 @@ public class MessageBubble extends JPanel {
 	private final boolean isFile;
 	private final String fileName;
 	private DownloadListener downloadListener;
+	private AudioPlayListener audioPlayListener;
 	private DeleteListener deleteListener;
 
 	/** Constructor cho tin nhắn văn bản thông thường. */
@@ -44,7 +50,11 @@ public class MessageBubble extends JPanel {
 		this.isSelf = isSelf;
 		this.isFile = true;
 		this.fileName = fileName;
-		buildFileUi();
+		if (fileName != null && fileName.toLowerCase().endsWith(".wav")) {
+			buildAudioUi();
+		} else {
+			buildFileUi();
+		}
 		setupClickSupport();
 	}
 
@@ -75,6 +85,10 @@ public class MessageBubble extends JPanel {
 	/** Đặt listener để xử lý sự kiện Download từ bên ngoài (ChatPanel). */
 	public void setDownloadListener(DownloadListener listener) {
 		this.downloadListener = listener;
+	}
+
+	public void setAudioPlayListener(AudioPlayListener listener) {
+		this.audioPlayListener = listener;
 	}
 
 	public void setDeleteListener(DeleteListener listener) {
@@ -243,6 +257,77 @@ public class MessageBubble extends JPanel {
 		fileRow.add(downloadBtn, BorderLayout.EAST);
 
 		wrapper.add(fileRow);
+		add(wrapper, BorderLayout.CENTER);
+	}
+
+	private void buildAudioUi() {
+		setLayout(new BorderLayout());
+		setOpaque(true);
+		setBackground(isSelf ? new Color(224, 231, 255) : Color.WHITE);
+		setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(210, 210, 210), 1, true),
+				BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+
+		JPanel wrapper = new JPanel();
+		wrapper.setOpaque(false);
+		wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
+
+		if (displayName != null && !displayName.trim().isEmpty()) {
+			JLabel nameLabel = new JLabel(displayName.trim());
+			nameLabel.setFont(new Font(null, Font.BOLD, 11));
+			nameLabel.setForeground(new Color(120, 120, 120));
+			nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+			wrapper.add(nameLabel);
+			wrapper.add(Box.createVerticalStrut(6));
+		}
+
+		JPanel audioRow = new JPanel(new BorderLayout(8, 0));
+		audioRow.setOpaque(false);
+		audioRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		JPanel leftPart = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+		leftPart.setOpaque(false);
+
+		JLabel iconLabel = new JLabel("🎤");
+		iconLabel.setFont(new Font(null, Font.PLAIN, 18));
+		iconLabel.setVerticalAlignment(SwingConstants.CENTER);
+		leftPart.add(iconLabel);
+
+		String displayFileName = stripMessageIdPrefix(fileName);
+		JLabel fileNameLabel = new JLabel(displayFileName.startsWith("voice_") ? "Voice Message" : displayFileName);
+		fileNameLabel.setFont(new Font(null, Font.PLAIN, 13));
+		fileNameLabel.setForeground(new Color(40, 40, 40));
+		leftPart.add(fileNameLabel);
+
+		audioRow.add(leftPart, BorderLayout.CENTER);
+
+		JButton playBtn = new JButton("▶ Play");
+		playBtn.setFocusable(false);
+		playBtn.setFont(new Font(null, Font.BOLD, 11));
+		playBtn.setForeground(new Color(0x63, 0x66, 0xF1));
+		playBtn.setBackground(new Color(240, 240, 255));
+		playBtn.setBorderPainted(false);
+		playBtn.setOpaque(true);
+		playBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		
+		playBtn.addActionListener(e -> {
+			if (playBtn.getText().equals("▶ Play")) {
+				if (audioPlayListener != null) {
+					playBtn.setText("⏹ Stop");
+					audioPlayListener.onPlayRequested(messageId, fileName, () -> {
+						SwingUtilities.invokeLater(() -> playBtn.setText("▶ Play"));
+					});
+				}
+			} else {
+				if (audioPlayListener != null) {
+					audioPlayListener.onStopRequested();
+				}
+				playBtn.setText("▶ Play");
+			}
+		});
+		audioRow.add(playBtn, BorderLayout.EAST);
+
+		wrapper.add(audioRow);
 		add(wrapper, BorderLayout.CENTER);
 	}
 
