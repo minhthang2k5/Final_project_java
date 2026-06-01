@@ -184,7 +184,7 @@ public class ChatPanel extends JPanel {
 		enterModeButton.setBorderPainted(false);
 		enterModeButton.setOpaque(true);
 		enterModeButton.setToolTipText("Enter = Send message, Shift+Enter = New line");
-		enterModeButton.setPreferredSize(new Dimension(80, 28));
+		enterModeButton.setPreferredSize(new Dimension(95, 28));
 		enterModeButton.addActionListener(event -> toggleEnterMode());
 
 		sendButton = new JButton("Send");
