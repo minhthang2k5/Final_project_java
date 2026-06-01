@@ -173,6 +173,9 @@ public class ClientHandler implements Runnable {
           }
           this.username = null;
           this.userId = 0;
+          if (server != null) {
+            server.notifyClientUpdated(this);
+          }
         }
         if (request.getType() == MessageType.CHECK_EXITS_USER_ID_REQUEST) {
           AuthService authService = new AuthService();
