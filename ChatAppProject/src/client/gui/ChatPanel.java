@@ -594,10 +594,15 @@ public class ChatPanel extends JPanel {
 
 	private static ImageIcon loadIcon(String path, int size) {
 		java.net.URL url = ChatPanel.class.getResource(path);
+		ImageIcon icon;
 		if (url == null) {
-			return null;
+			java.io.File f = new java.io.File("src" + path);
+			if (!f.exists()) f = new java.io.File("ChatAppProject/src" + path);
+			if (!f.exists()) return null;
+			icon = new ImageIcon(f.getAbsolutePath());
+		} else {
+			icon = new ImageIcon(url);
 		}
-		ImageIcon icon = new ImageIcon(url);
 		Image image = icon.getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
 		return new ImageIcon(image);
 	}
