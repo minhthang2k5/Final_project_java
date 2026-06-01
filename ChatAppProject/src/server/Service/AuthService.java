@@ -18,8 +18,10 @@ public class AuthService {
         if (resCheck == true) {
             response.setSuccess(true);
             response.setMessage("Login successful");
-            response.setUserId(userDao.fetchUserID(username));
+            int userId = userDao.fetchUserID(username);
+            response.setUserId(userId);
             response.setUsername(username);
+            response.setDisplayName(userDao.fetchDisplayName(userId));
             response.setType(MessageType.LOGIN_RESPONSE);
         } else {
             response.setSuccess(false);

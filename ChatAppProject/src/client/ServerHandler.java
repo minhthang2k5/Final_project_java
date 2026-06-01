@@ -402,7 +402,7 @@ public class ServerHandler extends SwingWorker<Void, MessageObject> {
         if (respond.isSuccess()) {
           pendingLoginPanel.clearInput();
           mainFrame.showDashBoardPanel();
-          mainFrame.getDashBoardPanel().setUserNameText(respond.getUsername());
+          mainFrame.getDashBoardPanel().setUserNameText(respond.getDisplayName() != null ? respond.getDisplayName() : respond.getUsername());
           mainFrame.getDashBoardPanel().setUserIdText("#" + String.valueOf(respond.getUserId()));
           mainFrame.getCurrentUser().setUserId(respond.getUserId());
           mainFrame.getCurrentUser().setUsername(respond.getUsername());
